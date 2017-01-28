@@ -1,4 +1,4 @@
-/*Compiled 2017-01-28:15:38:15*/
+/*Compiled 2017-01-28:16:23:22*/
 ﻿// $4 v15 2016/07/29
 // DOM manipulation library
 var $4 = {
@@ -251,6 +251,7 @@ W.prototype.off = function(event, handler){
 	}
 }*/
 
+;
 /*
 focusin/out event polyfill (firefox) 
 https://gist.github.com/nuxodin/9250e56a3ce6c0446efa
@@ -292,7 +293,8 @@ if(!('remove' in Element.prototype)){
     Element.prototype.remove = function(){
         this.parentNode && this.parentNode.removeChild(this);
     };
-}// ControlKit (Ckit) v8 2016/10/27
+};
+// ControlKit (Ckit) v8 2016/10/27
 
 (function(_global){
 	// @param {String} arg1 - tagName
@@ -407,6 +409,7 @@ if(!('remove' in Element.prototype)){
 	}
 }(this));
 
+;
 /* Backside  v17 2016/12/19 (based on 2016/08/15) */
 ;(function(_env){
 //==================================
@@ -1034,6 +1037,7 @@ _env.Backside = {
 	}
 };
 }(this));
+;
 //=========================================
 // Base provider
 //=========================================
@@ -1446,6 +1450,7 @@ var $MD = {
 		return temp.toLowerCase();
 	}
 };
+;
 // $mLib v11 28/11/15 (from v10 07/10/15, v9 04/01/2015)
 // namespace `$m` for some helpers methods
 var $m = {
@@ -1599,6 +1604,7 @@ var $m = {
 };
 
 
+;
 //==================================
 // Request
 //==================================
@@ -1679,7 +1685,8 @@ var $m = {
 
 		return this._exportHandlers();
 	};
-}var $UI = {
+};
+var $UI = {
 	events: {
 		dropDownSelected: document.createEvent('MouseEvents'),
 		visualInputChange: document.createEvent('MouseEvents'),
@@ -2229,7 +2236,8 @@ $UI.notify = function(message){
 	alert(message);
 };
 
-$UI.initControlDelegation();var KEY = {
+$UI.initControlDelegation();;
+var KEY = {
 	B: 66,
 	D: 68,
 	G: 71,
@@ -2765,7 +2773,8 @@ function createRange(element, start, end){
 	return rng;
 	// sel.removeAllRanges();
 	// sel.addRange(rng);
-};//==========================================
+};;
+//==========================================
 // SyntaxHighlighter
 //==========================================
 function SHighlighter(conf){
@@ -2936,7 +2945,8 @@ var HighlighterSets = {
 
 		}
 	}
-}function numberFragment(n){
+};
+function numberFragment(n){
 	var frag = document.createDocumentFragment();
 
 	for(var i = 1, buf; i < n; i++){
@@ -3213,6 +3223,7 @@ var HighlighterSets = {
 	};
 }
 
+;
 // Editor with syntax highlighting v120 2017/01/28
 var VER = 120;
 
@@ -4359,3 +4370,4 @@ var 	QUERY_OPTIONS = parseQuery();
 App.startNewProject(QUERY_OPTIONS.project);
 
 
+;
