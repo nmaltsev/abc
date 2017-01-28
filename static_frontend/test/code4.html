@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>PreEdit</title>
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="../css/syntax_h.css"/>
+<style>
+body{
+	margin: 0;
+	font: 13px/15px Arial;
+	color: #333;
+}
+.edit{
+	display: inline-block;
+	outline: none;
+	margin: 0;
+	min-height: 100%;
+	min-width: 100%;
+}
+.wrap{
+	margin: 20px;
+	width: 500px;
+	height: 200px;
+	overflow: auto;
+	border: 1px solid #aaa;
+}
+/*.sh_lines{
+	position: relative;
+}
+.sh_lines:before{
+	content: counter(list) ".";
+	position: absolute;
+    right: 100%;
+    counter-increment: list;
+    font-size: 11px;
+    color: #bbb;
+    margin: 0 4px 0 0;
+}*/
+</style>
+</head>
+<body>
+	<div class="wrap">
+		<pre class="edit" contenteditable></pre>
+	</div>
+<script src="../lib/preedit.js"></script>
+<script src="../lib/backside.js"></script>
+<script>
+{
+	function HtmlHighlight(){}
+	HtmlHighlight.prototype = {
+		PRETTIFY: new RegExp(
+			"(&lt;\\![^&]+&gt;|&lt;\\!--[\\s\\S]+?--&gt;)|(&lt;(?:/)?(?:\\w+))" +
+			"((?:\\s+\\w+(?:\\s*=\\s*(?:\".*?\"|'.*?'|[^&\\s]+))?)*\\s*)" +
+			"((?:/)?&gt;)", 'g'),
+		ATTR: /([\w\d\-_]+)(\s*=\s*)?(\"[^\"]+\"|\'[^\']+\'|[^&\s]+)?/g,
+		prettify: function(str){
+			var hstr = '';
+
+			return Backside._.htmlspecialchars(str).replace(this.PRETTIFY, function(subStr, comment, p1, p2, p3, p4,p5,p6){
+				hstr = '';
+
+				if(comment){
+					//console.log('Comment: %s', comment);
+					comment = comment.replace(/\n/g, '</span>\n<span class="sh_html_comment">');
+					return '<span class="sh_html_comment">' + comment + '</span>';
+				}
+				if(p1 != undefined && p3 != undefined){
+					hstr = '<span class="sh_html_tag">' + p1 + '</span>';
+					
+					if(p2){
+						var attr = p2.replace(this.ATTR, function(subStr, attr, sep, val){
+							var res = '';
+							if(attr){
+								res += '<span class="sh_html_attr">' + attr + '</span>';
+							}
+							if(sep){
+								res += sep;
+							}
+							if(val){
+								res += '<span class="sh_html_value">' + val + '</span>';
+							}
+							return res;
+						});
+						hstr += '<span class="sh_html_keyword">' + attr + '</span>';
+					}
+					hstr += '<span class="sh_html_tag">' + p3 + '</span>';
+				}
+				return hstr;
+			}.bind(this));
+
+		}
+	};
+}
+var 	$pre = document.querySelector('.edit');
+
+if(0){
+	var textEdit = new TextEdit($pre);
+}else{
+	var htmlEdit = new HtmlEdit($pre, new HtmlHighlight(), {
+		change: function(){}
+	});
+}
+
+</script>
+</body>
+</html>

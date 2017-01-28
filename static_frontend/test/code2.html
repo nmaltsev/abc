@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PreEdit</title>
+<meta charset="utf-8"/>
+<style>
+body{
+	margin: 0;
+	font: 13px/15px Arial;
+	color: #333;
+}
+.edit{
+	display: inline-block;
+	outline: none;
+	margin: 0;
+	min-height: 100%;
+	min-width: 100%;
+	font-family: Arial;
+}
+.wrap{
+	
+	width: 100%;
+	height: 200px;
+	overflow: auto;
+	border-left: 1px solid #aaa;
+	box-sizing: border-box;
+}
+.grid-wrap{
+	display: table;
+	border: 1px solid #aaa;
+	width: 300px;
+	margin: 20px;
+	height: 200px;
+
+}
+.grid{
+	display: table-row;
+}
+.cell-left,
+.cell-right{
+	display: table-cell;
+	vertical-align: top;	
+}
+
+.cell-left{
+	position: relative;
+}
+.cell-right{
+	width: 100%;
+}
+.scale{
+	text-align: right;
+	padding: 0 2px;
+	background: #eee;
+	color: #333;
+}
+.buf{
+	height: 200px;
+	overflow: hidden;
+}
+
+</style>
+</head>
+<body>
+<div class="grid-wrap">
+	<div class="grid">
+		<div class="cell-left">
+			<div class="buf">
+				<div class="scale"></div>
+			</div>
+		</div>
+		<div class="cell-right">
+			<div class="wrap">
+				<pre class="edit" contenteditable></pre>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script src="lib/preedit.js"></script>
+<script>
+var 	$pre = document.querySelector('.edit'),
+		$wrap = document.querySelector('.wrap'),
+		$scale = document.querySelector('.scale');
+
+var 	preEditor = new PreEdit($pre);
+
+$wrap.oninput = function(){
+	// console.log('[Update skale 1] %s', $pre.scrollTop);
+	setTimeout(function(){
+		console.log('[Update skale 1] %s, %s', $pre.scrollTop, $wrap.scrollTop);
+		$scale.style.marginTop = '-' + $wrap.scrollTop + 'px';
+		scaleResize();
+	}, 0)
+}
+$wrap.onkeydown = function(e){
+	if(e.keyCode == 13 || e.keyCode == 9){
+		setTimeout(function(){
+			console.log('[Update skale 2] %s, %s', $pre.scrollTop, $wrap.scrollTop);
+			scaleResize();
+			$scale.style.marginTop = '-' + $wrap.scrollTop + 'px';
+		}, 0)
+		
+	}
+}
+$wrap.onscroll = function(){
+	console.log('[Scroll] %s, %s', $pre.scrollTop, $wrap.scrollTop);
+	$scale.style.marginTop = '-' + $wrap.scrollTop + 'px';
+}
+
+
+
+var 	i = 1;
+var scaleResize = function(){
+	while($scale.clientHeight < $wrap.scrollHeight){
+		console.log('RESIZE i: %s', i);
+		$scale.textContent += (i + '\n');	
+		i++;
+	}
+}
+
+setTimeout(function(){
+	scaleResize();
+},100);
+</script>
+</body>
+</html>
