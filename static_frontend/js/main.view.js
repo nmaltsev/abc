@@ -993,7 +993,7 @@ document.onreadystatechange = function(){
 						'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
 						'	</head>\n' +
 						'	<body>\n' +
-						'		<h1>Hello world!</h1>\n' +
+						'		<h1 style="">Hello world!</h1>\n' +
 						'		<script src="./script.js"></script>\n' +
 						'	</body>\n' +
 						'</html>\n'

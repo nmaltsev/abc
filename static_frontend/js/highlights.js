@@ -90,11 +90,11 @@ var HighlighterSets = {
 		},
 	},
 	html: {
-		ATTR: /([\w\d\-\:_]+)(\s*=\s*)?(\"[^\"]+\"|\'[^\']+\'|[^&\s]+)?/g,
+		ATTR: /([\w\d\-\:_]+)(\s*=\s*)?(\"[^\"]*\"|\'[^\']*\'|[^&\s]*)?/g,
 		PATTERN: new RegExp(
 			"(&lt;\\!\\[CDATA\\[[\\s\\S]*?\\]\\]&gt;)|(&lt;[!?][^&]+&gt;|&lt;\\!--[\\s\\S]+?--&gt;)|(&lt;(?:/)?(?:[\\w\\-_:]+))" + // <![CDATA[<p>]]>, Comments(<!...>, <?...>) and tag name (<abc:x_y-z>)
 			// "((?:\\s+[\\w\-_]+(?:\\s*=\\s*(?:\".*?\"|'.*?'|[^&\\s]+))?)*\\s*)" +
-			"((?:\\s+[\\w\\-:_]+(?:\\s*=\\s*(?:\"[\\s\\S]+?\"|'[\\s\\S]+?'|[^&\\s]+))?)*\\s*)" + // Attrribute
+			"((?:\\s+[\\w\\-:_]+(?:\\s*=\\s*(?:\"[\\s\\S]*?\"|'[\\s\\S]*?'|[^&\\s]*))?)*\\s*)" + // Attrribute
 			"((?:/)?&gt;)", 
 		'g'),
 		transformer:  function(subStr, cdata, comment, p1, p2, p3, p4, p5, p6){
@@ -122,6 +122,7 @@ var HighlighterSets = {
 						return res;
 					});
 					hstr += '<span class="sh_html_attr-line">' + attr + '</span>';
+					// hstr += '<span class="sh_html_attr-line">' + p2 + '</span>';
 				}
 				hstr += '<span class="sh_html_tag">' + p3 + '</span>';
 				return hstr;
