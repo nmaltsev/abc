@@ -1,4 +1,4 @@
-/*Compiled 2017-01-28:16:23:22*/
+/*Compiled 2017-01-28:16:43:20*/
 ﻿// $4 v15 2016/07/29
 // DOM manipulation library
 var $4 = {
@@ -2866,11 +2866,11 @@ var HighlighterSets = {
 		},
 	},
 	html: {
-		ATTR: /([\w\d\-\:_]+)(\s*=\s*)?(\"[^\"]+\"|\'[^\']+\'|[^&\s]+)?/g,
+		ATTR: /([\w\d\-\:_]+)(\s*=\s*)?(\"[^\"]*\"|\'[^\']*\'|[^&\s]*)?/g,
 		PATTERN: new RegExp(
 			"(&lt;\\!\\[CDATA\\[[\\s\\S]*?\\]\\]&gt;)|(&lt;[!?][^&]+&gt;|&lt;\\!--[\\s\\S]+?--&gt;)|(&lt;(?:/)?(?:[\\w\\-_:]+))" + // <![CDATA[<p>]]>, Comments(<!...>, <?...>) and tag name (<abc:x_y-z>)
 			// "((?:\\s+[\\w\-_]+(?:\\s*=\\s*(?:\".*?\"|'.*?'|[^&\\s]+))?)*\\s*)" +
-			"((?:\\s+[\\w\\-:_]+(?:\\s*=\\s*(?:\"[\\s\\S]+?\"|'[\\s\\S]+?'|[^&\\s]+))?)*\\s*)" + // Attrribute
+			"((?:\\s+[\\w\\-:_]+(?:\\s*=\\s*(?:\"[\\s\\S]*?\"|'[\\s\\S]*?'|[^&\\s]*))?)*\\s*)" + // Attrribute
 			"((?:/)?&gt;)", 
 		'g'),
 		transformer:  function(subStr, cdata, comment, p1, p2, p3, p4, p5, p6){
@@ -2898,6 +2898,7 @@ var HighlighterSets = {
 						return res;
 					});
 					hstr += '<span class="sh_html_attr-line">' + attr + '</span>';
+					// hstr += '<span class="sh_html_attr-line">' + p2 + '</span>';
 				}
 				hstr += '<span class="sh_html_tag">' + p3 + '</span>';
 				return hstr;
@@ -4219,7 +4220,7 @@ document.onreadystatechange = function(){
 						'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
 						'	</head>\n' +
 						'	<body>\n' +
-						'		<h1>Hello world!</h1>\n' +
+						'		<h1 style="">Hello world!</h1>\n' +
 						'		<script src="./script.js"></script>\n' +
 						'	</body>\n' +
 						'</html>\n'
