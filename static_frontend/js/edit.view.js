@@ -45,8 +45,6 @@
 	EditView.prototype.initialize = function(conf){
 		Backside.View.prototype.initialize.call(this, conf);
 
-		console.log('Edit View CONF');
-		console.dir(conf);
 		if(conf.numerateLines){
 			this.listen('change:linesCount', function(count, model){
 				var prevCount = model.previous.linesCount || 0;
@@ -223,9 +221,6 @@
 	EditView.prototype.getSource = function(){
 		return this.htmlEdit.el.textContent;
 	};
-
-	console.log('EditView');
-	console.dir(EditView);
 
 	return EditView;
 });
@@ -560,23 +555,37 @@
 	*/
 	MarkdownViewer.prototype.updateContent = function(doc, source){
 		doc.open()
-		doc.write('<style>html{font:12px/16px Arial;color:#333;}body{margin:8px;}p{margin:0 0 8px 0;}pre{display:block;padding:8px;margin: 0 0 1em 0;background:#3a3c56;color:#fff;tab-size:4;}.markdown-code{padding:0 2px;background:#26a75a;color:#fff;}p{margin: 0 0 8px 0;}a{color:#1459dd;}</style>');
+		doc.write('<style>html{font:12px/16px Arial;color:#333;}body{margin:8px;}p{margin:0 0 8px 0;}pre{display:block;padding:8px;margin: 0 0 1em 0;background:#3a3c56;color:#fff;tab-size:4;}.markdown-code{padding:0 2px;background:#26a75a;color:#fff;}p{margin: 0 0 8px 0;}a{color:#1459dd;}ul{padding: 0 0 0 20px;}</style>');
 		doc.write(source
 			.replace( 
-				/((?:\-\s.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+)(.+)\n|([\s\S]*?)(?:\n\s+|\#)/g, 
-				function(substr, list_items, code_type, code, title_type, title_text,  article){
+				// /((?:\s*\-\s+.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+?)(.+)\n|([\s\S]*?)(?:\n\s+|\#|\n\s*\-)/g, 
+				/((?:\s*?\-\s+.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+?)(.+)\n/g, 
+				function(substr, list_items, code_type, code, title_type, title_text){
 					if(list_items){
-						return '<ul>' + list_items.split('- ').map(s => s && ('<li>' + Backside._.escape(s.trimLeft()) + '</li>')).filter(s => s && s).join('') + '</ul>';	
-					} else if(code != null){
+						return '<ul>' + list_items.
+							split('- ').
+							map(s => s.trimLeft()).
+							filter(s => s.length > 0).
+							map(s => '<li>' + Backside._.escape(s.trimLeft()) + '</li>').
+							join('') + 
+						'</ul>';	
+					}else if(code != null){
 						// TODO handle code_type.trim()
 						return '<pre>' + Backside._.escape(code) + '</pre>';
 					}else if(title_type){
 						title_type = 'h' + title_type.trim().length;
 						return '<' + title_type + '>' + Backside._.escape(title_text || '') + '</' + title_type + '>';
-					}else if(article != null){
+					}/*else if(article != null){
+						return '\n<p>' + (article).replace(/\s{2}\n/g, '<br/>') + '</p>\n';
+					}*/
+				})	
+			.replace(
+				/([\s\S]*?)(?:\n\s+|\#|\n\s*\-)/g,
+				function(substr, article){
+					if(article != null){
 						return '\n<p>' + (article).replace(/\s{2}\n/g, '<br/>') + '</p>\n';
 					}
-				})	
+				})
 			.replace(
 				// /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|`(.*?)`|([*]{3})|([\-]{3})|(\n)/g, 
 				/\[([^\]]*)\]\(([^\)]*)\)|`(.*?)`|([*]{3})|([\-]{3})/g, 

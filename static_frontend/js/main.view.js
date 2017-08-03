@@ -136,8 +136,8 @@
 });
 ;DPROVIDER.define(['DocumentModel', 'EditView', 'MarkdownViewer', 'JsConsole', 'FrameView', 'ExtMimeMap', 'ProjectModel', 'UIC', 'SHighlighter', 'HighlighterSets'], function MainView(DocumentModel, EditView, MarkdownViewer, JsConsole, FrameView, ExtMimeMap, ProjectModel, $UI, SHighlighter, HighlighterSets){
 
-	// Editor with syntax highlighting v154 2017/08/03
-	var VER = 154;
+	// Editor with syntax highlighting v155 2017/08/03
+	var VER = 155;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
