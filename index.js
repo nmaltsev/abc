@@ -3782,6 +3782,8 @@ if(ENV.DPROVIDER){
 		}
 	};
 	MainView.prototype.openAboutPopup = function(){
+		var App = this;
+
 		new $UI.Popup({
 			title: VOC.aboutApp.replace('%d', VER),
 			className: 'dwc_popup ppp_base',
@@ -3856,7 +3858,6 @@ if(ENV.DPROVIDER){
 				'startTestPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
-					
 					App.controls.loadTestProject.click();
 				},
 				'startDefaultPrjBtn click': function(e){
