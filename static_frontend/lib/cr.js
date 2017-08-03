@@ -103,8 +103,12 @@
 		}
 		return fr;
 	}
-
-	if(typeof(define) == 'function'){
+	
+	if(_global.DPROVIDER){
+		_global.DPROVIDER.define(null, function ControlKit(){
+			return Cr;
+		});
+	}else if(typeof(define) == 'function'){
 		define(function ControlKit(){
 			return Cr;
 		});

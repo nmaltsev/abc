@@ -1,7 +1,7 @@
 //==================================
 // Request
 //==================================
-{
+;DPROVIDER.define(null, function Request(){
 	function Request(url, forceJSON){
 		this.url = url;
 		this.xhr = new XMLHttpRequest();
@@ -78,4 +78,6 @@
 
 		return this._exportHandlers();
 	};
-}
+
+	return Request
+});

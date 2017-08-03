@@ -1,5 +1,6 @@
-/* Backside  v17 2016/12/19 (based on 2016/08/15) */
+/* Backside  v18 2017/05/26 (based on v18 2017/07/21 2016/12/19, 2016/08/15) */
 ;(function(_env){
+// Need polifils for NodeElement:remove ($4.removeNode(this.el);)
 //==================================
 // Events
 //==================================
@@ -81,39 +82,6 @@
 	};
 }
 //==================================
-// Model2 (Native observable model)
-// Depricated  since Chrome 49 https://developers.google.com/web/updates/2016/02/chrome-49-deprecations
-//==================================
-/*{
-	// var user = new Model({
-	// 	nick: 1,
-	// });
-	// user.on('change:name', function(value, obj, oldValue){
-	// 	console.log('Update name to `%s`', value);
-	// })	
-	function Model2(defaults){
-		Events.call(this);
-		this.attr = defaults || {};
-
-		Object.observe(this.attr, function(e){
-			console.log('Observered:');
-			console.dir(e);
-			if(e[0]){
-				this.trigger('change:' + e[0].name, e[0].object[e[0].name], e[0].oldValue);
-			}
-		}.bind(this));
-	}
-	Model2.prototype = Object.create(Events.prototype);
-	Model2.prototype.constructor = Events;
-	Model2.prototype.destroy = function(){
-		this.trigger('destroy');
-		for(var key in this.attr){
-			delete this.attr[key];
-		}
-		Events.prototype.destroy.call(this);
-	};
-}*/
-//==================================
 // Waterfall
 //==================================
 {
@@ -133,69 +101,6 @@
 			task(this.resolve.bind(this), data, $scope);
 		}	
 	};
-}
-//=========================================
-// Dependencies provider
-//=========================================
-{
-	// var dp = new Deprovider();
-	// dp.define(function MessageDispatcher(){
-	// 	function Dispatcher(){
-	// 		Events.call(this);
-	// 		chrome.runtime.onMessage.addListener(function(req, sender, res){
-	// 			this.trigger(req.action, req, res, sender);
-	// 			return true;
-	// 		}.bind(this));
-	// 	}
-	// 	Dispatcher.prototype = Object.create(Events.prototype);
-	// 	Dispatcher.prototype.constructor = Events;
-		
-	// 	return  Dispatcher;
-	// });
-
-	function Deprovider(){
-		this.stack = Object.create(null);
-		this.dependencies = {};
-		this.cache = {};
-	}
-	Deprovider.prototype = {
-		define: function(){
-			var 	dependencies, constructor;
-
-			if(arguments.length == 2){
-				dependencies = arguments[0];
-				constructor = arguments[1];
-			}else{
-				constructor = arguments[0];
-			}
-
-			if(constructor && constructor.name){
-				this.stack[constructor.name] = constructor;
-				
-				if(Array.isArray(dependencies)){
-					this.dependencies[constructor.name] = dependencies;
-				}
-			}
-		},
-		require: function(name){
-			if(this.cache[name]){
-				return this.cache[name];
-			}else if(this.stack[name]){
-				var 	constr = this.stack[name],
-						deps,
-						i;
-
-				if(deps = this.dependencies[name]){
-					i = deps.length;
-					while(i-- > 0){
-						deps[i] = this.require(deps[i]);
-					}
-				}
-
-				return this.cache[name] = constr.apply(null, deps);
-			}
-		}
-	}
 }
 //==================================
 // Model
@@ -241,8 +146,8 @@
 		}
 		this.trigger('change', this);
 	};
-	Model.prototype.get = function(key){
-		return this.attr[key];
+	Model.prototype.get = function(key, _default){
+		return this.attr[key] || _default;
 	};
 	Model.prototype.has = function(key){
 		return this.attr.hasOwnProperty(key);
@@ -601,21 +506,53 @@
 	// @param {String} property - model field
 	// @param {Function} callback 
 	View.prototype.listen = function(property, callback){
-		this.model && this.model.on(property, callback.bind(this));
+		var cb = callback.bind(this);
+		if(this.model) this.model.on(property, cb);
+		return cb
 	};
 	View.prototype.remove = function(){
 		this.destroy();
-		$4.removeNode(this.el);
+		this.el.remove();
 	};
+    View.prototype._prebindEvents = function(conf){
+        var 	events = conf || this.events,
+                control, eventName, pos, 
+                _cache = [];
+
+        for(key in events){
+            pos = key.indexOf(' ');
+
+            if(~pos){
+                eventName = key.substr(0, pos++);
+                control = this.controls[key.substr(pos)];
+            }else{
+                eventName = key;
+                control = this.el;
+            }
+            
+            if(control){
+                control[eventName] = events[key].bind(this);
+                _cache.push(control, eventName);
+            }
+        }
+        
+        return function(){
+            var i = _cache.length;
+            
+            while(i-=2){
+                if(_cache[i-1]) _cache[i-1][_cache[i]] = null;
+            }
+            _cache.length = 0;
+            _cache = null;
+        };
+    };
 }
 
 _env.Backside = {
 	Events: Events,
-	// Model2: Model2,
 	Model: Model,
 	DeepModel: DeepModel,
 	Waterfall: Waterfall,
-	Deprovider: Deprovider,
 	_: $helpers,
 	View: View,
 	extend: function(Constructor, Base){

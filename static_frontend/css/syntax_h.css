@@ -19,28 +19,14 @@
 .sh_css_color-mark{
 	display: inline-block;
 	vertical-align: bottom;
-	width: 8px;
+	width: 18px;
 	height: 18px;
 }
-/* Dark theme */
-.theme-dark .sc_edit-pre{
-	background-color: #1d2129;
-	color: #f8f8f2;
-}
-.theme-dark .sh_lines::selection{
-	background: rgba(255,255,255, 0.8);
-}
-/*.sh_multiline{
-
-}
-.sh_multiline:empty:before{
-	content: "";
-	display: inline-block;
-	vertical-align: middle;
-}
-*/
 
 /* new colors: */
+.sc_editwrap-numspace{
+    color: #ccc;
+}
 .sc_edit-pre{
 	--syntax-str-const: #3AA107;
 	--syntax-key-word: blue;
@@ -56,7 +42,26 @@
 	--syntax-html-attr-line: #000;
 
 	--syntax-css-pseudo: #9999FF;
+
+	--syntax-markdown-hyptext: #1459dd;
+	--syntax-markdown-hyplink: #afafca;
+	--syntax-markdown-code: #efefef;
+	--syntax-markdown-codetype: #333;
+	--syntax-markdown-title: #333;
 }
+    /* Dark theme */
+.theme-dark .sc_edit-pre{
+	background-color: #1d2129;
+	color: #f8f8f2;
+}
+.theme-dark .sc_editwrap-numspace{
+	background-color: #1d2129;
+	color: #565656;
+}
+.theme-dark .sh_lines::selection{
+	background: rgba(255,255,255, 0.8);
+}
+
 .theme-dark .sc_edit-pre{
 	--syntax-str-const: #a6e22e;
 	--syntax-key-word: #66d9ef;
@@ -78,6 +83,11 @@
 	background-color: rgba(26, 19, 31, 0.9);
 	color: rgb(248, 248, 242);
 }
+.theme-a .sc_editwrap-numspace{
+	background-color: rgba(26, 19, 31, 0.9);
+	color: #818186;
+}
+
 .theme-a .sc_edit-pre{
 	--syntax-str-const: rgb(184, 255, 176);
 	--syntax-key-word: rgb(102, 217, 239);
@@ -104,6 +114,10 @@
 	background-color: #fafbfc;
 	color: #3b3c40;
 }
+.theme-b .sc_editwrap-numspace{
+	background-color: #fafbfc;
+	color: #ccc;
+}
 .theme-b .sc_edit-pre{
 	--syntax-str-const: #690;
 	--syntax-key-word: #07a;
@@ -121,10 +135,13 @@
 	--syntax-css-pseudo: rgb(255, 153, 198);
 }
 /* THEME C */
-
 .theme-c .sc_edit-pre{
 	background-color: #272822;
 	color: #f8f8f2;
+}
+.theme-c .sc_editwrap-numspace{
+	background-color: #272822;
+	color: #616158;
 }
 .theme-c .sc_edit-pre{
 	--syntax-str-const: #fff188; 
@@ -142,6 +159,38 @@
 
 	--syntax-css-pseudo: #fd971f;
 }
+/* THEME D */
+.theme-d .sc_edit-pre{
+	background-color: #22282a;
+	color: rgb(241, 242, 243);
+}
+.theme-d .sc_editwrap-numspace{
+	background-color: #22282a;
+	color: #4f4f52;
+}
+.theme-d .sc_edit-pre{
+	--syntax-str-const: #ec7600; 
+	--syntax-key-word: rgb(147, 199, 99);
+	--syntax-comment: rgb(128, 128, 128); 
+
+	--syntax-js-number: rgb(255, 205, 34); 
+	--syntax-js-function: rgb(140, 140, 180);
+	--syntax-js-method: rgb(103, 140, 177);
+
+	--syntax-xml-cdata: rgb(153, 163, 138);
+
+	--syntax-html-attr-name: rgb(103, 140, 177);
+	--syntax-html-attr-line: rgb(241, 242, 243);
+
+	--syntax-css-pseudo: rgb(153, 218, 249);
+}
+.theme-d .sc_edit-pre{
+	border-left-color: #484852;
+}
+.theme-d .sc_edit-pre:focus{
+	outline-color: #585858;		
+}
+
 
 
 
@@ -191,5 +240,85 @@
 .sh_po_number{
 	color: var(--syntax-js-number);
 }
-/* Disable because unnecessery:;
-.sh_po_keyword{color: var(--syntax-js-method);}*/
+
+.sh_markdown_hyptext{
+    color: var(--syntax-markdown-hyptext);
+}
+.sh_markdown_hyplink{
+    color: var(--syntax-markdown-hyplink);   
+}
+.sh_markdown_title{
+    font-weight: bold;
+    font-size: 1.2em;
+    line-height: 1em;
+    color: var(--syntax-markdown-title);
+}
+.sh_markdown_titlesize1{
+    font-size: 2.4em;  
+    margin: 0 0 0.4em 0;
+}
+.sh_markdown_titlesize2{
+    font-size: 1.8em; 
+    margin: 0 0 0.4em 0;
+}
+.sh_markdown_titlesize3{
+    font-size: 1.5em; 
+    margin: 0 0 0.2em 0;
+}
+.sh_markdown_multiline-code,
+.sh_markdown_text{
+    padding: 8px;
+    margin: 0;
+}
+.sh_markdown_multiline-code,
+.sh_markdown_text{
+    display: block;
+    white-space: pre-wrap;    
+}
+.sh_markdown_multiline-code,
+.sh_markdown_code{
+    background: var(--syntax-markdown-code);
+}
+.sh_markdown_text{ /* NOT MARDOWN FEATURE*/
+    background: #aaa;
+}
+.sh_markdown_code{
+    display: inline;
+    margin: 0;
+}
+.sh_markdown_code-type{
+	font-weight: bold;
+	color: var(--syntax-markdown-codetype);
+}
+
+.theme-dark .sh_markdown_title,
+.theme-a .sh_markdown_title,
+.theme-c .sh_markdown_title,
+.theme-d .sh_markdown_title{
+	--syntax-markdown-title: orange;
+}
+
+.theme-dark .sh_markdown_multiline-code,
+.theme-dark .sh_markdown_code,
+.theme-a .sh_markdown_multiline-code,
+.theme-a .sh_markdown_code,
+.theme-c .sh_markdown_multiline-code,
+.theme-c .sh_markdown_code,
+.theme-d .sh_markdown_multiline-code,
+.theme-d .sh_markdown_code{
+	--syntax-markdown-code: #333;
+}
+
+.theme-dark .sh_markdown_hyptext,
+.theme-a .sh_markdown_hyptext,
+.theme-c .sh_markdown_hyptext,
+.theme-d .sh_markdown_hyptext{
+    --syntax-markdown-hyptext: #7ba9ff;
+}
+
+.theme-dark .sh_markdown_hyplink,
+.theme-a .sh_markdown_hyplink,
+.theme-c .sh_markdown_hyplink,
+.theme-d .sh_markdown_hyplink{
+    --syntax-markdown-hyplink: #4dc16c;
+}
