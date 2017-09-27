@@ -1,26 +1,12 @@
 // $mLib v11 28/11/15 (from v10 07/10/15, v9 04/01/2015)
 // namespace `$m` for some helpers methods
-var $m = {
-	// DEPRICATED
-	// // function for inheritance opportunity
-	// // @param {Function} - modifiable constructor
-	// // @param {Function} - base constructor
-	// // @param {object} - custom object properties
-	// inherit: function(Constructor, Base, extendProperties){
-	// 	var buf = Constructor.prototype;
-		
-	// 	Constructor.prototype = Object.create(Base.prototype, extendProperties);
-	// 	Constructor.prototype._base = Base;
-	// 	this.extend(Constructor.prototype, buf);
-		
-	// 	return Constructor;
-	// },
-
+;(function(_env){
+_env.$m = {
 	// @memberOf $m - Detect if argument is instance of Function
 	// @param {Object} obj
 	// @return {Bool} - true if obj is a function
 	isFunction: function(obj){
-		return this.instance(obj)==='[object Function]'; 
+		return this.instance(obj) === '[object Function]'; 
 	},
 	// @memberOf $m - get type of argument
 	// @return {Object} obj
@@ -109,26 +95,9 @@ var $m = {
 			}
 		}
 	},
-	// DEPRICATED
-	// // @memberOf $m
-	// // @param {Function} constructor
-	// // @param {Object} prototype
-	// // @param {Function} base
-	// class: function(constructor, prototype, base){
-	// 	// var inst = constructor || function(c){this._base.call(this, c);};
-	// 	// if(prototype) inst.prototype = prototype;
-	// 	// base && $m.inherit(inst, base);
-	// 	// return inst;
-	// 	var 	i = 0,
-	// 			inst = typeof(arguments[i]) == 'object' ? function(){this._base.apply(this, Array.prototype.slice.call(arguments))} : arguments[i++];
-		
-	// 	// inst.prototype = typeof(arguments[i]) == 'object' ? arguments[i++] : {};
-	// 	if(typeof(arguments[i]) == 'object') inst.prototype = arguments[i++];
-	// 	if(arguments[i]) $m.inherit(inst, arguments[i]);
-	// 	return inst;
-	// },
 	debounce: function(func, wait, immediate){
-		var _timeout;
+		var 	_timeout;
+
 		return function() {
 			var 	context = this, 
 					args = arguments,
@@ -149,5 +118,4 @@ var $m = {
 		};
 	}
 };
-
-
+}(this))

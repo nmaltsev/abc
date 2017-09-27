@@ -7,7 +7,6 @@
 		<link rel="stylesheet" type="text/css" href="css/uicontrols.css"/>
 		<link rel="stylesheet" type="text/css" href="css/syntax_h.css"/>
 		<link rel="stylesheet" type="text/css" href="css/layout.css"/>
-		<!-- <link rel="shortcut icon" type="image/png" href="text.png"> -->
 		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 		<title>ABC</title>
 	</head>
@@ -35,6 +34,7 @@
 						<option value="dark">Dark A</option>
 						<option value="theme-a">Dark B</option>
 						<option value="theme-c">Dark C</option>
+						<option value="theme-d">Dark D</option>
 					</select>
 
 					<div class="sc_toppanel_menu-label" data-co="toppanel-menu-label">
@@ -49,20 +49,22 @@
 							<!-- <button class="sc_toppanel_menu-item" data-co="save-project">Save</button> -->
 							<button class="sc_toppanel_menu-item" data-co="load-default-project">Load default project</button>
 							<button class="sc_toppanel_menu-item" data-co="load-test-project">Load test project</button>
-							<button class="sc_toppanel_menu-item" data-co="about-btn">About</button>
+							<!-- <button class="sc_toppanel_menu-item" data-co="about-btn">About</button> -->
 						</div>
 					</div>
+					<button class="sc_toppanel_about sc_virtual-link __chromeless __white" data-co="about-btn">About</button>
 				</div>
-
 			</div>
 			<div class="sc_layout-mid">
 				<div class="sc_layout-tools" data-co="tools">
 					<button class="tool-btn" data-co="tools-add-btn"><svg class="svg-btn-container"><use xlink:href="#svg-add"></use></svg></button>
+					<button class="tool-btn" data-co="last-projects-btn">S</button>
+					<button class="tool-btn" data-co="toggle-list-btn">&lt;</button>
 				</div>
 				<div class="sc_layout-left">
-					<div class="sc_documents-list" data-co="items">
-						
-					</div>
+					<div class="sc_documents-list" data-co="items"></div>
+					<!-- TODO: -->
+					<div class="sc_projects-list" data-co="projects" style="display:none;">TODO</div>
 				</div>
 				<div class="sc_layout-right grid_column" data-co="grid">
 					<div class="grid_row grid_cell" data-co="half1">
@@ -80,12 +82,11 @@
 
 <script src="lib/$4_clean.js"></script>
 <script src="lib/polyfills.js"></script>
+<script src="lib/dprovider.js"></script>
 <script src="lib/cr.js"></script>
 <script src="lib/backside.js"></script>
-<script src="lib/common.js"></script>
-<script src="lib/$m.js"></script>
 <script src="lib/xhr.js"></script>
-<script src="lib/uicontrols.js"></script>
+<script src="lib/ui.controls.js"></script>
 <script src="lib/preedit.js"></script>
 <script src="js/highlights.js"></script>
 <script src="js/edit.view.js"></script>

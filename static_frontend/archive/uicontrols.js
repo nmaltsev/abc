@@ -1,3 +1,5 @@
+// Use ui.controls.js
+// This file for code review
 var $UI = {
 	events: {
 		dropDownSelected: document.createEvent('MouseEvents'),
@@ -549,3 +551,5 @@ $UI.notify = function(message){
 };
 
 $UI.initControlDelegation();
+
+

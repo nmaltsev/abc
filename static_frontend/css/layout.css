@@ -7,6 +7,7 @@ input, select{
 	line-height: inherit;
 	font: inherit;
 }
+body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 
 /* BASE STYLES */
 .clearfix:before, .clearfix:after { content: ""; display: table; }
@@ -175,11 +176,11 @@ input, select{
 .sc_editwrap-numspace{
 	flex: 0 0 auto;
 	overflow: hidden;
-	padding: 0 8px 0 5px;
+	padding: 0 5px 0 8px;
 	font-size: 11px;
-	color: #aaa;
 	text-align: right;
 	min-width: 12px;
+    border-right: 1px solid;
 }
 .sc_editwrap-workspace{
 	outline: none;
@@ -188,9 +189,9 @@ input, select{
 }
 .sc_edit-pre{
 	position: absolute;
-	left: 1px;
+	left: 0;
 	top: 0;
-	right: 1px;
+	right: 0;
 	bottom: 0px;
 	margin: 0;
 	overflow-x: auto;
@@ -200,6 +201,7 @@ input, select{
 	tab-size: 4; /* Not supported by IE*/
 	counter-reset: list 0;
 	z-index: 2;
+	/*border-left: 1px solid #ccc;*/
 }
 .sc_edit-pre:focus{
 	outline: 1px solid #e3e3e3;
@@ -219,7 +221,7 @@ input, select{
 	display: inline-block;
 	vertical-align: middle;
 	width: 100%;
-	font-size: 13px;
+	font-size: 12px;
     line-height: 16px;
 	text-overflow: ellipsis;
     overflow: hidden;
@@ -279,6 +281,7 @@ input, select{
 }
 .tool-btn{
 	display: inline-block;
+    vertical-align: middle;
 	border: none;
 	outline: none;
 	cursor: pointer;
@@ -468,6 +471,19 @@ input, select{
 .sc_virtual-link.__default{
 	color: #1459dd;
 }
+.sc_virtual-link.__white{
+	color: #fff;
+}
+.sc_virtual-link.__chromeless{
+	background-color: transparent;
+	background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    padding: 0;
+    outline: none;
+}
+
 .sc_grid-type-a{
 	margin: 0 0 30px 0;
 }
@@ -485,12 +501,21 @@ input, select{
 */
 .sc_toppanel{
 	position: relative;
-	padding: 0 128px 0 calc(50px + 240px);
+	padding: 0 158px 0 calc(50px + 240px);
 	margin: 10px 0 0 0;
 }
+.sc_toppanel_about{
+	position: absolute;
+	right: 20px;
+	top: 6px;
+	cursor: pointer;
+	font-size: inherit;
+	line-height: inherit;
+}
+
 .sc_toppanel_menu-label{
 	position: absolute;
-	right: 10px;
+	right: 70px;
 	top: 0;
 	cursor: pointer;
 	border: 1px solid #e3e3e3;
@@ -503,13 +528,15 @@ input, select{
 }
 .sc_project-select,
 .sc_toppanel_menu-label{
-	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="32" height="24" viewBox="-16 -12 32 24"><polygon points="-16,-9 16,-9 0,12" style="fill:#aaa;"></polygon></svg>') #fff no-repeat;
+	/*background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="32" height="24" viewBox="-16 -12 32 24"><polygon points="-16,-9 16,-9 0,12" style="fill:#aaa;"></polygon></svg>') #fff no-repeat;*/
+	background: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjMyIiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSItMTYgLTEyIDMyIDI0Ij48cG9seWdvbiBwb2ludHM9Ii0xNiwtOSAxNiwtOSAwLDEyIiBzdHlsZT0iZmlsbDojYWFhOyI+PC9wb2x5Z29uPjwvc3ZnPg==) #fff no-repeat;
 	background-size: 9px 8px;
 	background-position: top 50% right 6px;
 }
 .sc_project-select:focus,
 .sc_toppanel_menu-label.__active{
-	background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="32" height="24" viewBox="-16 -12 32 24"><polygon points="-16,9 16,9 0,-12" style="fill:#aaa;"></polygon></svg>');
+	/*background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="32" height="24" viewBox="-16 -12 32 24"><polygon points="-16,9 16,9 0,-12" style="fill:#aaa;"></polygon></svg>');*/
+	background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjMyIiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSItMTYgLTEyIDMyIDI0Ij48cG9seWdvbiBwb2ludHM9Ii0xNiw5IDE2LDkgMCwtMTIiIHN0eWxlPSJmaWxsOiNhYWE7Ij48L3BvbHlnb24+PC9zdmc+');
 }
 .sc_toppanel_menu-list{
 	position: absolute;
@@ -592,9 +619,8 @@ input, select{
 	text-align: center;
 	font-size: 18px;
 	line-height: 25px;
-	margin: 0 20px 0 0;
+	margin: 0;
 	font-weight: normal;
-	
 }
 .sc_project-select, 
 .sc_toppanel_menu-label,
@@ -607,8 +633,11 @@ input, select{
 // About popup
 ////////////////////////////////////
 */
-.sc_about-popup{
+.about-popup{
 	color: #666;
+	margin: 10px 0 0 0;
+}
+.about-popup_hidden-content{
 	margin: 10px 0 0 0;
 }
 .sc_header1{
@@ -632,6 +661,21 @@ input, select{
 .sc_section1{
 	margin: 0 0 40px 0;
 }
+.sc_section2{
+	margin: 0 0 12px 0;
+}
+.sc_section3{
+	margin: 0 0 18px 0;
+}
+.sc_section4{
+	margin: 0 0 24px 0;
+}
+.sc_section5{
+	margin: 0 0 30px 0;
+}
+
+
+
 .sc_ul1,
 .sc_ul2{
 	margin: 0 0 12px 0;
@@ -648,4 +692,41 @@ input, select{
 .sc_ul2{
 	padding: 0px;
 	list-style: none;
+}
+/*
+////////////////////////////////////
+// About popup
+////////////////////////////////////
+*/
+.input-frame{
+	display: inline-block; /* Fit to input size */
+	position: relative;
+	vertical-align: middle;
+}
+.input-frame_input{
+	border: none;
+	font-size: 13px;
+	line-height: 20px;
+	border: 1px solid #dfdfdf;
+	padding: 16px 12px 4px 12px;
+	width: 320px;
+}
+.input-frame_placeholder{
+	position: absolute;
+	left: 12px;
+	top: 11px;
+	font-size: 13px;
+	line-height: 20px;
+	color: #999;
+}
+.input-frame_input:focus{
+	border-color: #ccc;
+	outline: none;
+}
+.input-frame_input:focus + .input-frame_placeholder,
+.input-frame_input.__not-empty + .input-frame_placeholder{
+	top: 2px;
+	font-size: 11px;
+	line-height: 15px;
+	color: #bbb;
 }
