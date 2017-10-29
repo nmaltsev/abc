@@ -9,14 +9,14 @@ It also supports:
 - Markdown viewer (basicle).
 
 ### About
-Abc doesn't have any dependencies and based on backbone like framework. 
-At this editor I have represent my ideas around organization of modular architecture and OOP in javascript.
+Abc doesn't have any dependencies and is based on Backbone.js like framework. 
+At this editor I have represented my ideas around organization of modular architecture and OOP in javascript.
 And I have reached my childhood dream to write my own text editor.
 
 Abc supports code evolution like [Plunker](http://plnkr.co/) or [jsfiddle](https://jsfiddle.net/).
 All projects can be exported at separated file and imported on another device. It hasn't any backend yet.
 
-Current version have partial support of markdown file format.
+Current version has partial support of markdown file format.
 
 Supported browsers:
 - Chrome
