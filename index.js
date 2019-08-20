@@ -1,4 +1,4 @@
-/*Compiled 2017-09-27:22:19:16*/
+/*Compiled 2019-08-20:23:48:26*/
 ﻿/* 
 $4 v15 2016/07/29
 DOM manipulation library
@@ -229,10 +229,17 @@ function DProvider(){
 	this.cache = {};
 }
 DProvider.prototype = {
+	define: function(arg1, arg2, arg3){
+		if(typeof(arg1) == 'string'){
+			this._define(arg1, arg2, arg3);
+		}else{
+			this._define(arg3, arg1, arg2);
+		}
+	},
 	// @param {String} name
 	// @param {Array} dependencies
 	// @param {Function}
-	define: function(dependencies, constructor, name){
+	_define: function(name, dependencies, constructor){
 		this.stack[name || constructor.name] = constructor;
 		
 		if(Array.isArray(dependencies)){
@@ -427,7 +434,7 @@ if(!('remove' in Element.prototype)){
 }(this));
 
 ;
-/* Backside  v18 2017/05/26 (based on v18 2017/07/21 2016/12/19, 2016/08/15) */
+/* Backside  v20 2018/02/15 */
 ;(function(_env){
 // Need polifils for NodeElement:remove ($4.removeNode(this.el);)
 //==================================
@@ -537,7 +544,7 @@ if(!('remove' in Element.prototype)){
 {
 	var Model = function(attr){
 		Events.call(this);
-		this.attr = attr || Object.create(null);
+		this.attr = attr || {}; // required hasOwnProperty() method
 	}
 	Model.prototype = Object.create(Events.prototype);
 	Model.prototype.constructor = Events;
@@ -576,7 +583,7 @@ if(!('remove' in Element.prototype)){
 		this.trigger('change', this);
 	};
 	Model.prototype.get = function(key, _default){
-		return this.attr[key] || _default;
+		return this.attr.hasOwnProperty(key) ? this.attr[key] : _default;
 	};
 	Model.prototype.has = function(key){
 		return this.attr.hasOwnProperty(key);
@@ -958,7 +965,7 @@ if(!('remove' in Element.prototype)){
                 eventName = key;
                 control = this.el;
             }
-            
+
             if(control){
                 control[eventName] = events[key].bind(this);
                 _cache.push(control, eventName);
@@ -1507,103 +1514,460 @@ if(ENV.DPROVIDER){
 	};
 }
 }(this));
-;(function(ENV){
+;DPROVIDER.define('HtmlEditor', ['LimitedStack'], function(LimitedStack){
 	//==============================
 	// Key codes
 	//==============================
-	const KEY = {
-		B: 66,
-		D: 68,
-		G: 71,
-		L: 76,
-		SLASH: 191,
-	};
+	const KEY = {};
+	KEY[(KEY[9] = 'TAB')] = 9;
+	KEY[(KEY[13] = 'ENTER')] = 13;
+	KEY[(KEY[37] = 'LEFT')] = 37;
+	KEY[(KEY[66] = 'B')] = 66;
+	KEY[(KEY[68] = 'D')] = 68;
+	KEY[(KEY[71] = 'G')] = 71;
+	KEY[(KEY[76] = 'L')] = 76;
+	KEY[(KEY[79] = 'O')] = 79;
+	KEY[(KEY[85] = 'U')] = 85;
+	KEY[(KEY[89] = 'Y')] = 89;
+	KEY[(KEY[90] = 'Z')] = 90;
+	KEY[(KEY[191] = 'SLASH')] = 191;
+
 	//==============================
-	// Debug options
+	// Debug options (TODO move to dependencies `Config` module)
 	//==============================
 	const DEBUG = {
 		keyCodes: false,
 	};
 
-	function setSelectionRange(input, selectionStart, selectionEnd) {
-		if(input.setSelectionRange){
-			input.focus();
-			input.setSelectionRange(selectionStart, selectionEnd);
-		}else if (input.createTextRange) {
-			var range = input.createTextRange();
+	const KEY_BINDINGS = {
+		'CTRL_SHIFT_D': function(self, posData){
+			var 	text = self.el.textContent,
+					borders = self._getBordersOfContextLine(posData, text);
 
-			range.collapse(true);
-			range.moveEnd('character', selectionEnd);
-			range.moveStart('character', selectionStart);
-			range.select();
-		}
-	}
+			return {
+				text: text.slice(0, borders.start) + borders.fragment + borders.fragment + (text.slice(borders.end) || ''),
+				start: borders.start + borders.fragment.length,
+				end: borders.end + borders.fragment.length
+			};
+		},
+		'ALT_L': function(self, posData){
+			var 	text = self.el.textContent,
+					borders = self._getBordersOfContextLine(posData, text);
 
-	function findLineBorders(text, pos){
-		var out = {
-			start: text.lastIndexOf('\n', pos - 1),
-			end: text.indexOf('\n', pos)
-		};
-		if(!~out.start){ // not found
-			out.start = 0;
-		}else{
-			out.start++;
-		}
-		if(!~out.end){
-		 	out.end = text.length; // not found	
-		}else{
-			out.end++;
-		}
+			borders.fragment = borders.fragment.toLowerCase();
+			return {
+				text: text.slice(0, borders.start) + borders.fragment + (text.slice(borders.end) || ''),
+				start: borders.start, 
+				end: borders.start + borders.fragment.length
+			};
+		},
+		'ALT_G': function(self, posData){
+			var 	text = self.el.textContent,
+					borders = self._getBordersOfContextLine(posData, text);
 
-		return out;
-	}
+			borders.fragment = borders.fragment.toUpperCase();
+			return {
+				text: text.slice(0, borders.start) + borders.fragment + (text.slice(borders.end) || ''),
+				start: borders.start,
+				end: borders.start + borders.fragment.length
+			};
+		},
+		'ALT_B': function(self, posData){
+			var 	text = self.el.textContent,
+					borders = self._getBordersOfContextLine(posData, text);
 
-	function findLineBorders2(text, pos){
-		var out = {
-			start: text.lastIndexOf('\n', pos - 1),
-			end: text.indexOf('\n', pos)
-		};
-		if(!~out.start){ // not found
-			out.start = 0;
-		}else{
-			out.start++;
-		} 
-		if(!~out.end){ // not found	
-			out.end = text.length	
-		}
+			if (self._hooks.ALT_B) borders.fragment = self._hooks.ALT_B(borders.fragment);
 
-		return out;
-	}
+			return {
+				text: text.slice(0, borders.start) + borders.fragment + (text.slice(borders.end) || ''),
+				start: borders.start,
+				end: borders.start + borders.fragment.length
+			};
+		},
+		'ALT_U': function(self, posData){
+			var 	text = self.el.textContent,
+					borders = self._getBordersOfContextLine(posData, text);
 
-	// CHANGE '\n\n\n' -> '\n[CHAR]\n[CHAR]\n'
-	function fixNewLines(s, char){
-		var p, out = '', prev = 0, diff, count = 0;
+			if(self._hooks.ALT_U) borders.fragment = self._hooks.ALT_U(borders.fragment);
 
-		while(p != -1){
-			p = s.indexOf('\n', prev + 1);
-			
-			if(p != -1){
-				diff = p - prev;
-				
-				if(diff != 1){
-					out += s.substring(prev, p)
-				}else{
-					out += '\n' + char; 
-					count++;
-				}
-				prev = p;
-			}else{
-				out += s.substring(prev);
+			return {
+				text: text.slice(0, borders.start) + borders.fragment + (text.slice(borders.end) || ''),
+				start: borders.start,
+				end: borders.start + borders.fragment.length
+			};
+		},
+		// Open all brackets at selected text
+		ALT_O: function(self, posData){
+			var 	text = self.el.textContent,
+					borders = self._getBordersOfContextLine(posData, text);
+
+			borders.fragment = self.model.getSource(borders.fragment);
+
+			return {
+				text: text.slice(0, borders.start) + borders.fragment + (text.slice(borders.end) || ''),
+				start: borders.start,
+				end: borders.start + borders.fragment.length
+			};
+		},
+		'CTRL_SLASH': function(self, posData){
+			if(self._hooks.CTRL_SLASH){
+				var 	//posData = self.getSelection(),
+						text = self.el.textContent,
+						start = posData.end - posData.size;
+						end = posData.end;
+
+				if(text.charAt(end - 1) == '\n' && start != end) end--; // if range end on \n - cut it out
+				if(text.charAt(start) == '\n' && start == end) start--;
+
+				var 	topBorder = text.lastIndexOf('\n', start),
+						bottomBorder = text.indexOf('\n',end),
+						fragment;
+
+				if (topBorder == -1) {
+					topBorder = 0;	
+				} else {
+					topBorder++;	
+				} 
+				if (bottomBorder == -1) bottomBorder = text.length - 1;
+
+				fragment = self._hooks.CTRL_SLASH(text.substring(topBorder, bottomBorder));
+
+				return {
+					text: (text.slice(0, topBorder) + fragment.text + text.slice(bottomBorder)),
+					start: posData.size == 0 ? (posData.end + fragment.offset) : topBorder,
+					end: posData.size == 0 ? (posData.end + fragment.offset) : (topBorder + fragment.text.length)
+				};
 			}
-			
 		}
-		return {
-			str: out,
-			count: count
-		};
-	}
+	};
 
-	function createRange(element, start, end){
+	// TODO refactoring: all dependencies pass to constructor throught arguments
+	// TODO refactoring: conf object change to model! Transform to normall backbone View
+
+	//=================================
+	// HtmlEdit
+	//=================================
+	// @param {Object} conf
+	function HtmlEdit($pre, engine, conf, model){
+		this.el = $pre;
+		this.el.contentEditable = true;
+		this.__ffPasteHook = false;
+		this._handlers = Object.create(null);
+		this._hooks = {};
+		this.init();
+
+		this.engine = engine;
+		this._conf = conf;
+		this.model = model;
+
+		this._history = new LimitedStack();
+	}
+	HtmlEdit.prototype.key_bindings = KEY_BINDINGS;
+
+	HtmlEdit.prototype.events = {
+		//// ovveride [Enter] and [TAB] keys, without firing oninput event
+		keydown: function(e){
+			if(DEBUG.keyCodes){
+				console.log('Key: %s', e.keyCode);
+				console.dir(e);	
+			}
+
+			if (e.keyCode === KEY.ENTER || e.keyCode === KEY.TAB || e.keyCode === 46) { // Default actions on keys
+				// #13 - prevent [Enter] browsers inserting <div>, <p>, or <br> on their own
+				// #9 - prevent [Tab]
+				// by default by [Enter] removing selection
+		    	let		posData = this.getSelection(),
+		    			pos = posData.end,
+		    			text;
+
+		    	if(posData.size == 0){ //// if cursor without selection
+		    		e.preventDefault(); //// don't fire oninput event!
+		    		text = this.el.textContent;
+
+					if(e.keyCode == KEY.ENTER){
+						//// detect how many \t was at previous line 
+						var 	prevNewLinePos = text.lastIndexOf('\n', pos - 1) + 1, //// Attention: don't fix `-1` value because position index and cursur position shifted on one item.
+								tabStr = '';
+
+						while(prevNewLinePos < pos){
+							if(text[prevNewLinePos] == '\t'){
+								tabStr += '\t';
+								prevNewLinePos++;
+							}else{
+								break;
+							}
+						}
+
+						text = text.slice(0, pos) + '\n' + tabStr + (text.slice(pos) || ' ');
+						pos += tabStr.length;
+
+					}else if(e.keyCode == KEY.TAB){
+						// text = text.slice(0, pos) + '\t' + (text.slice(pos) || ' ');
+						let tab = this._getTab();
+						text = text.slice(0, pos) + tab + (text.slice(pos) || ' ');
+
+						// TODO refactor pos offsets for all cases!
+						pos += tab.length -1;
+					}else if(e.keyCode == 46){ // This hook for html editor. Fix removing of empty node
+						text = text.slice(0, pos) + (text.slice(pos + 1) || ' ');
+						pos--;
+					}
+
+					posData.sel.removeAllRanges();
+					this.setText(text);
+					
+					if(this._isIE11){ // FOR IE
+						this.setSelectionRange(this.el, pos + 1); // this.el.childNodes[0], pos
+						let range = this.setCaretPos(pos + 1);
+						posData.sel.addRange(range);
+					}else{
+						posData.sel.addRange(this.setCaretPos(pos + 1));
+					}
+					this._history.add({
+						text,
+						start: pos + 1,
+						end: pos + 1,
+					});
+
+		    	}else{ // Ovveride moving lines by tab
+					if(e.keyCode == KEY.TAB){ // Catch TAB
+						e.preventDefault(); //// don't fire oninput event!
+
+						text = this.el.textContent;
+						var start = posData.end - posData.size;
+						var selectedText = text.substring(start, pos);
+
+						if(selectedText.indexOf('\n') == -1){ // if new lines not founded just replace selected on \t
+							// text = text.slice(0, start) + '\t' + (text.slice(pos) || ' ');
+							// pos -= selectedText.length - 1; // less on one because we replace on single char \t
+							let tab = this._getTab();
+							text = text.slice(0, start) + tab + (text.slice(pos) || ' ');
+							pos -= selectedText.length - tab.length; // less on one because we replace on single char \t
+
+							posData.sel.removeAllRanges();
+							this.setText(text);
+							posData.sel.addRange(this.setCaretPos(pos));
+						}else{
+							var 	head = text.slice(0, start),
+									lastLinePos = head.lastIndexOf('\n'),
+									lines,
+									diff = text.length;
+
+							// start position will change
+							start = lastLinePos != -1 ? lastLinePos : 0;
+							selectedText = text.substring(start, pos);
+
+							if(e.shiftKey){ // move selected to left
+								// lines = selectedText.split('\n').map(str => (str.charCodeAt(0) == 9 || str.charCodeAt(0) == 32) ? str.substring(1) : str);
+								lines = selectedText.split('\n').map(function(str){return (str.charCodeAt(0) == 9 || str.charCodeAt(0) == 32) ? str.substring(1) : str;});
+								text = text.slice(0, start) + lines.join('\n') + (text.slice(pos) || '');
+								// pos -= lines.length; // count all new tabs for offset	
+							}else{ // move selected to right
+								let tab = this._getTab();
+								lines = selectedText.split('\n').map(function(str){return str.length > 0 ? tab + str : str;});
+								text = text.slice(0, start) + lines.join('\n') + (text.slice(pos) || '');
+								// lines = selectedText.split('\n').map(function(str){return str.length > 0 ? '\t' + str : str;});
+								// text = text.slice(0, start) + lines.join('\n') + (text.slice(pos) || '');
+							}
+							diff -= text.length;
+							pos -= diff;
+
+							posData.sel.removeAllRanges();
+							this.setText(text);
+
+							let range = this.createRange(this.el, (start > 0 ? start + 1 : 0), pos);
+
+							posData.sel.addRange(range);
+						}
+					}
+				}
+			} else if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) {
+				// This condition must be after [TAB] handler because it ovverides lines shifting with [Shift] key
+				if(KEY[e.keyCode]){
+					let 	combination = ((e.ctrlKey || e.metaKey) ? 'CTRL_' : '') + (e.shiftKey ? 'SHIFT_' : '') + (e.altKey ? 'ALT_' : '') + KEY[e.keyCode],
+							handler = this.key_bindings[combination],
+							posData = this.getSelection();
+
+					if (handler) {
+						e.preventDefault();
+						console.log('Key combination: %s', combination);
+
+						let historyPoint = handler(this, posData);
+
+						if (historyPoint) {
+							posData.sel.removeAllRanges();
+							this.setText(historyPoint.text);
+							posData.sel.addRange(this.createRange(this.el, historyPoint.start, historyPoint.end));
+							this._history.add(historyPoint);
+						}
+					}
+				}
+			}
+		},
+		//// Force html entities escaping after past events. First important for FF and need at Chrome sometimes.
+		//// Attention: Firefox. Paste <br/> beside \n
+		//// Attention: clipboardData.getData() can be called only in onpaste event by security reasons
+		paste: function(e){
+			// Prevent pasting HTML at document
+			if(e && e.clipboardData && e.clipboardData.types && e.clipboardData.getData){
+				e.stopPropagation();
+				e.preventDefault();
+
+				let 	pastedData = e.clipboardData.getData('text').replace(/\r/g, ''); // Also available 'text/html'
+						posData = this.getSelection(),
+						text = this.el.textContent,
+						start = posData.end - posData.size,
+						end = posData.end;
+
+				if(this._hooks.onpaste){
+					console.log('Before onpaset hook');
+					pastedData = this._hooks.onpaste(pastedData);						
+				}
+
+				text = text.slice(0, start) + pastedData + text.slice(end);	
+				end = start + pastedData.length;	
+				posData.sel.removeAllRanges();
+				this.setText(text);
+				// To stay selected 
+				// posData.sel.addRange(createRange(this.el, start, end));
+				posData.sel.addRange(this.createRange(this.el, end, end));
+			}
+		},
+		copy: function(e){
+			if(e && e.clipboardData && this._hooks.oncopy){
+				e.stopPropagation();
+					e.preventDefault();
+
+					let 	posData = this.getSelection(),
+						text = this.el.textContent,
+						start = posData.end - posData.size,
+						end = posData.end;
+
+				e.clipboardData.setData('text/plain', this._hooks.oncopy(text.substring(start, end)));
+			}
+		},
+		input: function(e){
+			var 	text = this.el.textContent, 
+					selection = this.getSelection(),
+				 	caretPos = selection.end - selection.size;
+
+			this.setText(text);
+			selection.sel.removeAllRanges();
+			selection.sel.addRange(this.setCaretPos(caretPos));
+
+			// TODO save current state for restoring
+			// this._history.push({
+
+			// });
+		}
+	};
+
+	HtmlEdit.prototype._isFirefox = typeof(InstallTrigger) !== 'undefined';
+	HtmlEdit.prototype._isIE11 = !!window.MSInputMethodContext && !!document.documentMode; // Not work at IE11
+	HtmlEdit.prototype.setText = function(text){
+		this.el.textContent = text;
+	};
+	HtmlEdit.prototype.getText = function(){
+		return this.el.textContent;	
+	};
+
+	HtmlEdit.prototype.getSelection = function(){
+		var 	sel = window.getSelection(),
+				range = sel.getRangeAt(0),
+				preCaretRange = range.cloneRange();
+
+		preCaretRange.selectNodeContents(this.el);
+		preCaretRange.setEnd(range.endContainer, range.endOffset);
+
+		if(this._isIE11){
+			// [Relevant code]
+			var 	el = sel.anchorNode,
+					pos = sel.anchorOffset;
+
+			while(el.parentNode && el != this.el){
+				while(el.previousSibling){
+					el = el.previousSibling;
+					pos += el.textContent.length;
+				};
+				el = el.parentNode;
+			}
+			return {
+				end: pos,
+				size: sel.toString().length, // selection length
+				sel: sel,
+			};
+		}else{
+			// Attention: Start can be detected with sel.anchorNode!
+			// Attention:
+			// Selection size can be detected by `sel.toString().length` and `range.toString().length`. Both of them perfectly work in Chrome
+			// But FF doesn't count tab chars in selections at `sel.toString().length`.
+			return {
+				end: preCaretRange.toString().length, // where selection ends IE11 results is differernt from Chrome (not contains \n)
+				// end: preCaretRange.endOffset, // Buggi Work at IE11 and W3C, but without syntax highlighting!
+
+				// Attention!
+				// FF bug: lose all tabs inside selection! Табы не учитываются, поэтому может быть меньше реального
+				// FF piece of schit
+				// size: sel.toString().length, // selection length
+				size: range.toString().length,
+				sel: sel,
+				range: range,
+			};
+		}
+	};
+
+	HtmlEdit.prototype.init = function(){
+		var handler;
+
+		for(key in this.events){ // bind events
+			handler = this.events[key].bind(this);
+			this._handlers[key] = handler;
+			this.el.addEventListener(key, handler);
+		}
+	};
+	HtmlEdit.prototype.debug = function(text){
+		return (text || this.el.textContent).replace(/\n/g,'<N>').replace(/\r/g,'<R>').replace(/\t/g,'<T>')
+	};
+	HtmlEdit.prototype._getBordersOfContextLine = function(posData, text){
+		var 	out = {};
+
+		if(posData.size == 0){ // Get current line
+			let borders = this.findLineBorders(text, posData.end);
+
+			out.start = borders.start;
+			out.end = borders.end;
+		}else{ // get selection
+			out.start = posData.end - posData.size;
+			out.end = posData.end;
+		}
+		out.fragment = text.substring(out.start, out.end);
+
+		return out;
+	};
+	HtmlEdit.prototype._getTab = function(){
+		// TODO set configurable tabSize!
+		return true ? '\t' : ' '.repeat(4);
+	};
+	HtmlEdit.prototype.destroy = function(){
+		var handler;
+
+		for(key in this._handlers){ // unbind events
+			handler = this._handlers[key];
+			this.el.removeEventListener(key, handler);
+		}
+		this._handlers = Object.create(null);
+	};
+	HtmlEdit.prototype.setCursor = function(pos){
+		var sel = window.getSelection();
+
+		console.log('[setCursor %s]', pos);
+		console.dir(sel);
+
+		sel.removeAllRanges();
+		sel.addRange(this.setCaretPos(pos));
+	};
+
+	HtmlEdit.prototype.createRange = function(element, start, end){
 		var 	rng = document.createRange(),
 				n, o = 0,
 				tw = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, null);
@@ -1624,401 +1988,112 @@ if(ENV.DPROVIDER){
 		}
 		return rng;
 	};
+	HtmlEdit.prototype.setSelectionRange = function(input, selectionStart, selectionEnd) {
+		if(input.setSelectionRange){
+			input.focus();
+			input.setSelectionRange(selectionStart, selectionEnd);
+		}else if (input.createTextRange) {
+			var range = input.createTextRange();
 
-	//==============================
-	// TextEdit
-	//==============================
-	// @argument {HtmlElemnt} $pre - <pre></pre>
-	function TextEdit($pre, hooks){ 
-		this.el = $pre;
-		this.el.contentEditable = true;
-		this.__ffPasteHook = false;
-		this._handlers = Object.create(null);
-		this._hooks = {};
-		this.init();
-	}
-	TextEdit.prototype = {
-		_isFirefox: typeof(InstallTrigger) !== 'undefined',
-		_isIE11: !!window.MSInputMethodContext && !!document.documentMode, // Not work at IE11
-		setText: function(text){
-			this.el.textContent = text;
-		},
-		getSelection: function(){
-			var 	sel = window.getSelection(),
-					range = sel.getRangeAt(0),
-					preCaretRange = range.cloneRange();
+			range.collapse(true);
+			range.moveEnd('character', selectionEnd);
+			range.moveStart('character', selectionStart);
+			range.select();
+		}
+	};
+	HtmlEdit.prototype.findLineBorders = function(text, pos){
+		var out = {
+			start: text.lastIndexOf('\n', pos - 1),
+			end: text.indexOf('\n', pos)
+		};
+		
+		if (!~out.start) { // not found
+			out.start = 0;
+		} else {
+			out.start++;
+		}
 
-			preCaretRange.selectNodeContents(this.el);
-			preCaretRange.setEnd(range.endContainer, range.endOffset);
+		if (!~out.end) {
+		 	out.end = text.length; // not found	
+		} else {
+			out.end++;
+		}
 
-			if(false &&  this._isIE11){
-				console.log('Range:');
-				console.dir(range);
-				console.dir(preCaretRange);
-				console.log('EndOffset: %s', range.endContainer.textContent.length);
-				console.dir(range.endContainer)
-				console.log('caretRange: %s %s %s', preCaretRange.toString().length, preCaretRange.endOffset, this.debug(preCaretRange.toString()));	// Diff IE from Chrome (not contains \n)
-			}
-
-			if(this._isIE11){
-				// [Relevant code]
-				var 	el = sel.anchorNode,
-						pos = sel.anchorOffset;
-
-				while(el.parentNode && el != this.el){
-					while(el.previousSibling){
-						el = el.previousSibling;
-						pos += el.textContent.length;
-					};
-					el = el.parentNode;
-				}
-				return {
-					end: pos,
-					size: sel.toString().length, // selection length
-					sel: sel,
-				};
-			}else{
-				return {
-					// Last stable code
-					end: preCaretRange.toString().length, // where selection ends IE11 results is differernt from Chrome (not contains \n)
-					// end: preCaretRange.endOffset, // Buggi Work at IE11 and W3C, but without syntax highlighting!
-					size: sel.toString().length, // selection length
-					sel: sel,
-				};
-			}
-		},
-		init: function(){
-			var handler;
-
-			for(key in this.events){ // bind events
-				handler = this.events[key].bind(this);
-				this._handlers[key] = handler;
-				this.el.addEventListener(key, handler);
-			}
-		},
-		debug: function(text){
-			return (text || this.el.textContent).replace(/\n/g,'<N>').replace(/\r/g,'<R>').replace(/\t/g,'<T>')
-		},
-		events: {
-			//// ovveride [Enter] and [TAB] keys, without firing oninput event
-			keydown: function(e){
-				var 	key = e.keyCode;
-
-				if(DEBUG.keyCodes){
-					console.log('Key: %s', key);
-					console.dir(e);	
-				}
-				
-				if(key == KEY.D && e.shiftKey && e.ctrlKey){ // [Ctrl + Shift + D]
-					e.preventDefault();
-					// Attention set cursor at same position as before inserting!
-					var 	posData = this.getSelection(),
-							text = this.el.textContent,
-							start, end, fragment;
-
-					if(posData.size == 0){ // copy line
-						// var borders = findLineBorders(text, posData.end);
-						var borders = findLineBorders(text, posData.end);
-						start = borders.start;
-						end = borders.end;
-						fragment = text.substring(start, end);
-
-						text = text.slice(0, start) + fragment + fragment + (text.slice(end) || '');		
-						start = end = posData.end + fragment.length;
-						// DEPRICATED
-						// posData.sel.removeAllRanges();
-						// this.setText(text);
-						// posData.sel.addRange(this.setCaretPos(posData.end + fragment.length));
-					}else{ // copy selection
-						start = posData.end - posData.size;
-						end = posData.end;
-						fragment = text.substring(start, end);
-						text = text.slice(0, end) + fragment + (text.slice(end) || '');	
-						start = posData.end;
-						end = posData.end + posData.size;
-						// DEPRICATED
-						// posData.sel.removeAllRanges();
-						// this.setText(text);
-						// posData.sel.addRange(createRange(this.el, posData.end, posData.end + posData.size));
-					}
-					posData.sel.removeAllRanges();
-					this.setText(text);
-					posData.sel.addRange(createRange(this.el, start, end));
-				}else if(e.altKey && (
-					key == KEY.L || key == KEY.G || key == KEY.B
-				)){
-					e.preventDefault();
-					var 	posData = this.getSelection(),
-							text = this.el.textContent,
-							start, end, fragment;
-
-					if(posData.size == 0){ 
-						// var borders = findLineBorders2(text, posData.end);
-						var borders = findLineBorders(text, posData.end);
-
-						start = borders.start;
-						end = borders.end;
-					}else{
-						start = posData.end - posData.size;
-						end = posData.end;
-					}
-					fragment = text.substring(start, end);
-
-					if(key == KEY.L){
-						fragment = fragment.toLowerCase();				
-					}else if(key == KEY.G){
-						fragment = fragment.toUpperCase();
-					}else if(key == KEY.B && this._hooks.ALT_B){
-						fragment = this._hooks.ALT_B(fragment);
-					}
-					text = text.slice(0, start) + fragment + (text.slice(end) || '');
-
-					posData.sel.removeAllRanges();
-					this.setText(text);
-					posData.sel.addRange(createRange(this.el, start, start + fragment.length));
-				}else if(e.ctrlKey && key == KEY.SLASH && this._hooks.CTRL_SLASH){
-					e.preventDefault();
-					var 	posData = this.getSelection(),
-							text = this.el.textContent,
-							start = posData.end - posData.size;
-							end = posData.end;
-
-					if(text.charAt(end - 1) == '\n' && start != end) end--; // if range end on \n - cut it out
-					if(text.charAt(start) == '\n' && start == end) start--;
-
-					var 	topBorder = text.lastIndexOf('\n', start),
-							bottomBorder = text.indexOf('\n',end),
-							fragment;
-
-					if(topBorder == -1) topBorder = 0;
-						else topBorder++;
-					if(bottomBorder == -1) bottomBorder = text.length - 1;
-
-					fragment = this._hooks.CTRL_SLASH(text.substring(topBorder, bottomBorder));
-					posData.sel.removeAllRanges();
-					this.setText(text.slice(0, topBorder) + fragment.text + text.slice(bottomBorder));
-
-					if(posData.size == 0){
-						posData.sel.addRange(createRange(this.el, posData.end + fragment.offset, posData.end + fragment.offset));
-					}else{
-						posData.sel.addRange(createRange(this.el, topBorder, topBorder + fragment.text.length));
-					}
-				}
-				// #13 - prevent [Enter] browsers inserting <div>, <p>, or <br> on their own
-				// #9 - prevent [Tab]
-				// by default by [Enter] removing selection
-			    if(key === 13 || key === 9 || key === 46){
-			    	var 	posData = this.getSelection(),
-			    			pos = posData.end,
-			    			text, range;
-
-			    	if(this._isIE11){
-			    		console.log('[Enter catch] pos: %s key: %s ', pos, key);
-			    		console.dir(posData);	
-			    	}
-
-			    	if(posData.size == 0){ //// if cursor without selection
-			    		e.preventDefault(); //// don't fire oninput event!
-			    		// e.returnValue = false;
-			    		text = this.el.textContent;
-
-			    		// var 	head = text.slice(0, pos),
-			    		// 		lineFix = fixNewLines(head, ' '); // \u200b &#8203; -zero width space
-
-						if(key === 13){
-							//// detect how many \t was at previous line 
-							var 	prevNewLinePos = text.lastIndexOf('\n', pos-1) + 1, //// Attention: don't fix `-1` value because position index and cursur position shifted on one item.
-									tabStr = '';
-
-							while(prevNewLinePos < pos){
-								if(text[prevNewLinePos] == '\t'){
-									tabStr += '\t';
-									prevNewLinePos++;
-								}else{
-									break;
-								}
-							}
-
-							text = text.slice(0, pos) + '\n' + tabStr + (text.slice(pos) || ' ');
-							pos += tabStr.length;
-						}else if(key === 9){
-							text = text.slice(0, pos) + '\t' + (text.slice(pos) || ' ');
-						}else if(key === 46){ // This hook for html editor. Fix removing of empty node
-							text = text.slice(0, pos) + (text.slice(pos + 1) || ' ');
-							pos--;
-						}
-
-						posData.sel.removeAllRanges();
-						this.setText(text);
-						
-						if(this._isIE11){ // FOR IE
-							setSelectionRange(this.el, pos + 1); // this.el.childNodes[0], pos
-							var range = this.setCaretPos(pos + 1);
-							posData.sel.addRange(range);
-						}else{
-							posData.sel.addRange(this.setCaretPos(pos + 1));
-						}
-
-			    	}else{ // else TODO ovveride moving lines by tab
-						if(key == 9){ // Catch TAB
-							e.preventDefault(); //// don't fire oninput event!
-							text = this.el.textContent;
-							var start = posData.end - posData.size;
-							var selectedText = text.substring(start, pos);
-
-							if(selectedText.indexOf('\n') == -1){ // if new lines not founded just replace selected on \t
-								text = text.slice(0, start) + '\t' + (text.slice(pos) || ' ');
-								pos -= selectedText.length - 1; // less on one because we replace on single char \t
-
-								posData.sel.removeAllRanges();
-								this.setText(text);
-								posData.sel.addRange(this.setCaretPos(pos));
-							}else{
-								var 	head = text.slice(0, start),
-										lastLinePos = head.lastIndexOf('\n'),
-										lines,
-										diff = text.length;
-
-								// start position will change
-								start = lastLinePos != -1 ? lastLinePos : 0;
-								selectedText = text.substring(start, pos);
-
-								if(e.shiftKey){ // move selected to left
-									// lines = selectedText.split('\n').map(str => (str.charCodeAt(0) == 9 || str.charCodeAt(0) == 32) ? str.substring(1) : str);
-									lines = selectedText.split('\n').map(function(str){return (str.charCodeAt(0) == 9 || str.charCodeAt(0) == 32) ? str.substring(1) : str;});
-									text = text.slice(0, start) + lines.join('\n') + (text.slice(pos) || '');
-									// pos -= lines.length; // count all new tabs for offset	
-								}else{ // move selected to right
-									lines = selectedText.split('\n').map(function(str){return str.length > 0 ? '\t' + str : str;});
-									text = text.slice(0, start) + lines.join('\n') + (text.slice(pos) || '');
-								}
-								diff -= text.length;
-								pos -= diff;
-
-								posData.sel.removeAllRanges();
-								this.setText(text);
-
-								var range = createRange(this.el, (start > 0 ? start + 1 : 0), pos);
-
-								posData.sel.addRange(range);
-							}
-						}
-					}
-			    }
-			},
-			//// Force html entities escaping after past events. First important for FF and need at Chrome sometimes.
-			//// Attention: Firefox. Paste <br/> beside \n
-			paste: function(e){
-				// Prevent pasting HTML at document
-				if(e && e.clipboardData && e.clipboardData.types && e.clipboardData.getData){
-					e.stopPropagation();
-					e.preventDefault();
-
-					var 	pastedData = e.clipboardData.getData('text').replace(/\r/g, ''); // 'text/html'
-							posData = this.getSelection(),
-							text = this.el.textContent,
-							start = posData.end - posData.size,
-							end = posData.end;
-
-					// console.group();
-					// console.log('PASTE start: %s, end: %s, pastedData: %s', start, end, pastedData.length);
-					// console.log(this.debug(pastedData));
-					// console.dir(posData);
-					// console.groupEnd();
-
-					text = text.slice(0, start) + pastedData + text.slice(end);	
-					end = start + pastedData.length;	
-					posData.sel.removeAllRanges();
-					this.setText(text);
-					// To stay selected 
-					// posData.sel.addRange(createRange(this.el, start, end));
-					posData.sel.addRange(createRange(this.el, end, end));
-				}
-			}
-		},
-		destroy: function(){
-			var handler;
-
-			for(key in this._handlers){ // unbind events
-				handler = this._handlers[key];
-				this.el.removeEventListener(key, handler);
-			}
-			this._handlers = Object.create(null);
-		},
-		setCursor: function(pos){
-			var sel = window.getSelection();
-
-			sel.removeAllRanges();
-			sel.addRange(this.setCaretPos(pos));
-		},
-		setCaretPos: function(pos){
-			var		range = document.createRange();
-
-			range.setStart(this.el.childNodes[0], pos);
-			range.setEnd(this.el.childNodes[0], pos);
-			range.collapse(false);
-			return range;
-		},
+		return out;
 	};
 
-	//=================================
-	// HtmlEdit
-	//=================================
-	// @param {Object} conf
-	function HtmlEdit($pre, engine, conf){
-		TextEdit.call(this, $pre);
-		this.engine = engine;
-		this._conf = conf;
-	}
-	HtmlEdit.prototype = Object.create(TextEdit.prototype);
-	HtmlEdit.prototype.constructor = TextEdit;
-	HtmlEdit.prototype.events = Object.assign(Object.create(null), TextEdit.prototype.events)
+	HtmlEdit.prototype.key_bindings['CTRL_Z'] = function(self){
+		console.log('UNDO');
+		console.dir(self._history);
 
-	// DEPRICATED
-	// // Create independent handlers collection
-	// HtmlEdit.prototype.events = Object.create(null);
-	// for(var eventName in TextEdit.prototype.events){
-	// 	HtmlEdit.prototype.events[eventName] = TextEdit.prototype.events[eventName];
-	// }
+		var historyPoint = self._history.pop();
 
-	HtmlEdit.prototype.events.input = function(e){
-		var 	text = this.el.textContent,
-				selection = this.getSelection(),
-			 	caretPos = selection.end - selection.size;
+		// TODO first historyPoint unshift to `history redo list`
+		// TODO add second List `redoList` at history
 
-		this.setText(text);
-		selection.sel.removeAllRanges();
-		selection.sel.addRange(this.setCaretPos(caretPos));
-		// this._lastPos = selection.end;
+
+
+		if (historyPoint = self._history.pop()) { // second pop
+			let 	sel = window.getSelection();
+
+			console.log('historyPoint');
+			console.dir(historyPoint);
+			
+			// TODO move current state at variant list (redo list for Ctrl-Y)
+			// sel.removeAllRanges();
+			// self.setText(historyPoint.text);
+			// sel.addRange(self.createRange(self.el, historyPoint.start, historyPoint.end));
+			return historyPoint;
+		} else {
+			console.warn('History is empty');
+		}
+		
 	};
+	HtmlEdit.prototype.key_bindings['CTRL_Y'] = function(self){
+		console.dir('REDO');
+		// WTF ??
+	};
+
 	HtmlEdit.prototype.setText = function(code){
 		this.el.style.whiteSpace = 'pre';
 
-		var replacePattern = /(\\u[a-f0-9]{4})/ig;
+		var 	replacePattern = /(\\u[a-f0-9]{4})/ig,
+				count;
 		// var replacePattern = /([\u0080-\u0400\u04FF-\uFFFF])/g;
 		// var replacePattern = /([\u04FF-\uFFFF])/g; 
-		code = code.replace(replacePattern, function(s){
-			var 	c = s.charCodeAt(0).toString(16), 
+		/*code = code.replace(replacePattern, function(s){
+			var 	c = s.charCodeAt(0).toString(32), 
 					i = 4 - c.length; 
 
-			while(i-- > 0) c = '0' + c; 
-			return '\\u' + c;
-		});
-		
-		// if(html = this.engine && this.engine.prettify){
-		if(this.engine && this.engine.prettify){
-			var 	html = this.engine.prettify(code),
-					count = this.countParts(html, '\n');
+			console.log('setText replace s: `%s`, c: `%s`', s, c)	
+			console.dir(arguments);
 
+			while(i-- > 0){
+				
+				c = '0' + c; 	
+				console.log('Loop: %s', c);
+			} 
+			console.dir(c);
+			return '\\u' + c;
+		});*/
+		//  To research. Correct paste '\u0410-\u044f' at chrome
+		code = code.replace(replacePattern, function(s){
+			return '\\u' + s.substring(2);
+		});
+
+		
+		if(this.engine && this.engine.prettify){
+			let 	html = this.engine.prettify(code);
+			
+			count = this.countParts(html, '\n');
 			this._conf.onLinesCountUpdate && this._conf.onLinesCountUpdate(count);
 			this.el.innerHTML = html;
 		}else{
-			var count = this.countParts(code, '\n');
-
+			count = this.countParts(code, '\n');
 			this._conf.onLinesCountUpdate && this._conf.onLinesCountUpdate(count);
 			this.el.textContent = code;
 		}
-		this._conf.onChange(code); // or this.el.textContent
+		this._conf.onChange(code);
 
 		return 0;
 	};
@@ -2033,44 +2108,87 @@ if(ENV.DPROVIDER){
 		return count;
 	};
 	// TODO use createTreeWalker at setCaretPos
+	// HtmlEdit.prototype.setCaretPos = function(pos){
+	// 	var 	offset = pos,
+	// 			$node = this.el,
+	// 			range = document.createRange(),
+	// 			$nodes,
+	// 			i;
+
+	// 	while(offset > 0){
+	// 		$nodes = $node.childNodes;
+	// 		for(i = 0; i < $nodes.length; i++){
+	// 			if(offset > $nodes[i].textContent.length){
+	// 				offset -= $nodes[i].textContent.length;
+	// 			}else{
+	// 				$node = $nodes[i];
+	// 				break;
+	// 			}
+	// 		}
+
+	// 		if($node instanceof Text){
+	// 			break;
+	// 		}
+	// 	}
+
+	// 	range.setStart($node, offset);
+	// 	range.collapse(true);
+	// 	return range;
+	// };
 	HtmlEdit.prototype.setCaretPos = function(pos){
-		var 	offset = pos,
-				$node = this.el,
-				range = document.createRange(),
-				$nodes,
-				i;
+		var range = this.createRange(this.el, pos, pos);
 
-
-		while(offset > 0){
-			$nodes = $node.childNodes;
-			for(i = 0; i < $nodes.length; i++){
-				if(offset > $nodes[i].textContent.length){
-					offset -= $nodes[i].textContent.length;
-				}else{
-					$node = $nodes[i];
-					break;
-				}
-			}
-
-			if($node instanceof Text){
-				break;
-			}
-		}
-
-		range.setStart($node, offset);
 		range.collapse(true);
 		return range;
 	};
 
-	if(ENV.DPROVIDER){
-		ENV.DPROVIDER.define(null, function HtmlEditor(){
-			return HtmlEdit;
+	// @param {HtmlElement} node
+	// @return {Number} pos
+	HtmlEdit.prototype.getElementPos = function(node){
+		var 	pos = 0,
+				n;
+		var symbolstack = [];
+		
+		if(node.previousSibling){
+			n = node.previousSibling;
+			pos = 0;
+		}else{
+			n = node.parentNode;
+		}
+
+		while(n != this.el && n.parentNode){
+			while(n.previousSibling){
+				pos += n.textContent.length;
+				symbolstack.push(n.textContent);
+				n = n.previousSibling;
+			}
+			pos += n.textContent.length;
+			symbolstack.push(n.textContent);
+			n = n.parentNode;
+		}
+
+		return pos;
+	};
+
+	HtmlEdit.prototype.resetCode = function(code, selectionStartPos, selectionEndPos){
+		var sel = window.getSelection();
+
+		// this.el.focus();
+		sel.removeAllRanges();
+		this.setText(code);
+		// this.setCaretPos(selectionStart);
+		sel.addRange(this.createRange(this.el, selectionStartPos, selectionEndPos));
+		this._history.add({
+			text: code,
+			start: selectionStart,
+			end: selectionEnd
 		});
-	}else{
-		ENV.HtmlEdit = HtmlEdit;	
-	}
-}(window));
-;
+	};
+
+
+
+	return HtmlEdit;
+});;
 //==========================================
 // SyntaxHighlighter
 //==========================================
@@ -2102,10 +2220,17 @@ if(ENV.DPROVIDER){
 	return SHighlighter;
 });
 ;DPROVIDER.define(null, function HighlighterSets(){
+	function span(className, value){
+		return '<span class="' + className + '">' + value + '</span>';
+	}
+
 	return {
 		js: {
 			PATTERN: new RegExp(
-				"(//.*(?=[\\n]|$))|" + // single line comment
+				''
+				+ '(\\%b\\d+b\\%)' // @codeBlock
+				+ '|'
+				+ "(//.*(?=[\\n]|$))|" + // single line comment
 				'(\\/\\*[\\s\\S]*?($|\\*\\/))|' + // multiline comment
 				// '((?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")|(?:\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'))|' + // single or double quote strings
 				// Attention: `.?` skip '\n' so it fix by (*)
@@ -2115,15 +2240,27 @@ if(ENV.DPROVIDER){
 					'(?:\\/[^\\s]+(?!\\\\)\\/)[img]{0,3}(?!\\d)(?=\\s*[\\;,\\x5d\\x29\\x2e\\n]?)' +
 				')|' +		
 				// '(?:(?=function\\s*)([\\w\\d\\-\\_\\$]+)(?=\\s*\\())|' + // function name
-				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()|' + // function name
-	            "(\\b(?:break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|true|false|typeof|throw|Infinity|import|export|from|constructor|super|class|this)\\b)|" + // keywords
-				"(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null)\\b)|" + // numbers
+				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()' + // function name
+				// Attention `constructor` is not keyword
+	            "|(\\b(?:break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|true|false|typeof|throw|Infinity|import|export|from|super|class|extends|this)\\b)" + // @keywords
+				"|(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null)\\b)|" + // numbers
 				//"(?:\\.([@\\w]+)(?=[(]))|" + // method chaining
 				//"(?:\\b([@\\w]+)(?=[(]))", // function execution
-	            "(?:([@\\w]+)(?=[(]))", // function execution
+	            "(?:([@\\w]+)(?=[(]))" // function execution
+	            + '|(\{|\})' // @figBrackets
+	            , 
 			'g'),
-			transformer: function(subStr, p1, p2, p2end, str1, str2, reg, funcDef, funcSplit, funcName, funcBrack, keywords, p6, method, funcExc){
-				if(p1 != undefined){
+			transformer: function(subStr, codeBlock,p1, p2, p2end, str1, str2, reg, funcDef, funcSplit, funcName, funcBrack, keywords, p6, method, /*funcExc, */figBrackets){
+				if(codeBlock != undefined){
+					// DOM content must contains code block identificator and be the same size as relative model item
+					
+					return '<i class="sh-codeblock" data-id="' + codeBlock.substr(2, codeBlock.length - 4) + '"><span class="sh-codeblock_inner" contenteditable="false">' + codeBlock + '</span></i>';
+					
+					
+					// return '<i class="sh-codeblock2" data-id="' + codeBlock.substr(2, codeBlock.length - 4) + '"><span class="sh-codeblock_inner2">' + codeBlock + '</span>' + '<i class="sh-codeblock_inner3">{...}</i>' + '</i>';
+					// return '<i class="sh-codeblock2" data-id="' + codeBlock.substr(2, codeBlock.length - 4) + '"><span class="sh-codeblock_inner2">' + codeBlock + '</span>' + '</i>';
+					
+				}else if(p1 != undefined){
 					return '<span class="sh_js_comment">' + subStr + '</span>';
 				}else if(p2 != undefined){
 					return '<span class="sh_js_comment sh_multiline">' + subStr.replace(/\n/g, '</span>\n<span class="sh_js_comment sh_multiline">') + '</span>';
@@ -2168,6 +2305,8 @@ if(ENV.DPROVIDER){
 				}*/
 	            else if(method != undefined){
 					return '<span class="sh_js_method">' + method + '</span>';
+				}else if(figBrackets){
+					return span('sh-js_brackets', figBrackets);
 				}
 			},
 			commOpen: '//',
@@ -2265,12 +2404,12 @@ if(ENV.DPROVIDER){
 		},
 
 		// TODO
-		// ***\n - horizontal line (<hr/>)
+		// ***\n - horizontal line (<hr/>) \n****\n
 
 	    markdown: {
 	        // PATTERN: /\[([^\]]*)\]\(([^\)]*)\)|(\#+)(.+\n)|```([\s\S]*?)```|`(.*?)`|\*\*([\s\S]*?)\*\*/ig,
-	        PATTERN: /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|```(.+)?\n([\s\S]*?)```|`(.*?)`|\*\*([\s\S]*?)\*\*/ig,
-	        transformer: function(substr, hyp_text, hyp_link, title_type, title_text, code_type, code, code_line, multiline_text, list_items){
+	        PATTERN: /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|```(.+)?\n([\s\S]*?)```|`(.*?)`|(\*+)([^*\n]+)(\*+)/ig, 
+	        transformer: function($sub_s, hyp_text, hyp_link, title_type, title_text, code_type, code, code_line, multiline_text_open, multiline_text, multiline_text_close, $pos){
 	            if(hyp_text != null){
 	                return '<span class="sh_markdown_hyptext">[' + hyp_text + ']</span>' + '<span class="sh_markdown_hyplink">(' + (hyp_link || '') + ')</span>';
 	            }else if(title_type){
@@ -2280,9 +2419,17 @@ if(ENV.DPROVIDER){
 	            }else if(typeof(code_line) == 'string'){ // fix empty string
 	                return '<i class="sh_markdown_code">`' + code_line + '`</i>';
 	            }else if(code != null){
-	                return '<pre class="sh_markdown_multiline-code">```' + (code_type ? '<span class="sh_markdown_code-type">' + code_type + '</span>' : '')+'\n' + code + '```</pre>';
-	            }else if(multiline_text){
-	                return '<pre class="sh_markdown_text">**' + multiline_text + '**</pre>';
+	                return '<pre class="sh_markdown_multiline-code">```' + (code_type ? '<span class="sh_markdown_code-type">' + code_type + '</span>' : '') + '\n' + code + '```</pre>';
+	            } else if(multiline_text) {
+	            	let minLength_n = Math.min(multiline_text_open.length, multiline_text_close.length);
+	            	let em_n = minLength_n % 2,
+	            		strong_n = minLength_n >> 1,
+						start_s = '*'.repeat(multiline_text_open.lengh - minLength_n) + '<em>'.repeat(em_n) + '<strong>'.repeat(strong_n),
+	            		end_s = '</strong>'.repeat(strong_n) + '</em>'.repeat(em_n) + '*'.repeat(multiline_text_close.lengh - minLength_n);
+
+	                return start_s + multiline_text_open + multiline_text + multiline_text_close + end_s;
+	            } else {
+	            	return $sub_s;
 	            }
 	        },
 	    }
@@ -2292,6 +2439,7 @@ if(ENV.DPROVIDER){
 ;
 ;DPROVIDER.define(null, function ExtMimeMap(){
 	return {
+		'htm':   'text/html',
 		'html':   'text/html',
 		'xml':    'text/xml',
 		'svg':    'text/html',
@@ -2303,10 +2451,37 @@ if(ENV.DPROVIDER){
 		'md':     'text/markdown',
 	};
 });
+
+// TODO inject at HtmlEdit for Stack
+
+//==========================================
+// LimitedStack
+//==========================================
+
+;DPROVIDER.define('LimitedStack', null, function(){
+	// for exctracting items use pop() method
+	
+	class LimitedStack extends Array{
+		add(item){
+			this.push(item);
+			
+			if(this.length > this.MAX_STACK_SIZE){
+				this.splice(0, this.length - this.MAX_STACK_SIZE);
+			}
+		}
+	} 
+	LimitedStack.prototype.MAX_STACK_SIZE = 10; 
+	return LimitedStack;
+});
+
+
 //==========================================
 // EditView
 //==========================================
 ;DPROVIDER.define(['HtmlEditor', 'ExtMimeMap'], function EditView(HtmlEdit, ExtMimeMap){
+	console.log('HtmlEdit');
+	console.dir(HtmlEdit);
+
 	function numberFragment(n){
 		var frag = document.createDocumentFragment();
 
@@ -2319,7 +2494,50 @@ if(ENV.DPROVIDER){
 		return frag;
 	}
 
-		var EditView = Backside.extend(function(conf){
+	function findCloseBracket(str, start){
+		var 	pos = start,
+				c = -1,
+				i = start,
+				len = str.length;
+
+		for(; i < len; i++){
+			if(str.charAt(i) == '{'){
+				c++;
+			}else if(str.charAt(i) == '}'){
+				c--;
+
+				if(c == -1){
+					pos = i + 1;
+					break;
+				}
+			}
+		}
+
+		return pos;
+	};
+	function findOpenBracket(str, end){
+		var 	pos = 0,
+				c = -1,
+				i = end;
+
+		while(i-- > 0){
+			if(str.charAt(i) == '{'){
+				c++;
+
+				if(c == -1){
+					pos = i;
+					break;
+				}
+			}else if(str.charAt(i) == '}'){
+				c--;
+			}
+		}
+
+		return pos;
+	};
+
+
+	var EditView = Backside.extend(function(conf){
 		Backside.View.call(this, conf);
 	}, Backside.View);
 
@@ -2336,6 +2554,7 @@ if(ENV.DPROVIDER){
 	'';
 	EditView.prototype.initialize = function(conf){
 		Backside.View.prototype.initialize.call(this, conf);
+		this.parent = conf.parent;
 
 		if(conf.numerateLines){
 			this.listen('change:linesCount', function(count, model){
@@ -2361,15 +2580,15 @@ if(ENV.DPROVIDER){
 				onLinesCountUpdate: conf.numerateLines ? function(count){
 					this.model.change('linesCount', count);
 				}.bind(this) : function(){},
-				// Featured
 				onChange: function(code){
-					// this.model.set('content', code);
 					this.model.change('content', code);
 				}.bind(this)
-			}
+			},
+			this.model
 		);
 		
 		if(this.model.get('mime') == ExtMimeMap.js || this.model.get('mime') == ExtMimeMap.json){
+			
 			this.htmlEdit._hooks.ALT_B = function(fragment){
 				var 	out = fragment;
 
@@ -2377,8 +2596,6 @@ if(ENV.DPROVIDER){
 					var 	data = JSON.parse(fragment);
 					out = JSON.stringify(data, null, '\t');
 				}catch(e){
-					// TODO
-					// alert(VOC.unvalid_json_data);
 					out = fragment.replace(/\{|\;|\,/g, function(s){
 						return s + '\n';
 					}).replace(/\}/g, function(s){
@@ -2387,7 +2604,176 @@ if(ENV.DPROVIDER){
 				}
 				return out;
 			}
+			// TODO remove on close
+			// TODO save whole origin selection
+			this.htmlEdit.el.onmousedown = function(e){
+				var $target = e.target;
+
+
+				// TODO refactor code
+				if($target.classList.contains('sh-js_brackets')){ // Hide block
+					e.preventDefault();
+					e.stopPropagation();
+
+					let 	isOpen = $target.textContent == '{',
+							content = this.model.get('content'),
+							posData = this.htmlEdit.getSelection(),
+							curPos = posData.end;
+					let 	startPos/* = this.htmlEdit.getElementPos($target)*/,
+							targetPos = this.htmlEdit.getElementPos($target),
+							endPos,
+							blockCode;
+
+					// console.log('OriginalCode');
+					// console.dir(content);
+					// console.log('Click on Bracket, isOpen: %s, startPos: %s  curPos %s', isOpen, startPos, curPos);
+					// console.dir(posData);
+
+					if(isOpen){
+						startPos = targetPos;
+						endPos = findCloseBracket(content, startPos);
+						// new:
+						startPos++;
+						endPos--;
+						// blockCode = content.substring(startPos, endPos); 
+						
+						// if(curPos > startPos){
+						// 	if(curPos <= endPos){ // Cursor in hidden block
+						// 		curPos = startPos + 13; // size of codeBlockId (it always const)
+						// 	}else{ // Cursor was after hidden block
+						// 		curPos -= blockCode.length - 12; 
+						// 	}
+						// } 
+						// console.log('OPEN start: `%s` end: `%s`', content.substring(0, startPos), content.substring(endPos));
+						// content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos);
+					}else{
+						/*
+						endPos = findOpenBracket(content, startPos + 1);
+						// new:
+						startPos--;
+						endPos++;
+						blockCode = content.substring(endPos, startPos + 1);
+
+						if(curPos > endPos){
+							if(curPos <= startPos){ // Cursor in hidden block
+								curPos = endPos + 13;
+							}else{ // Cursor was after hidden block
+								curPos -= blockCode.length - 12; 
+							}
+						} 
+						content = content.substring(0, endPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(startPos + 1);
+						*/
+						endPos = targetPos;
+						startPos = findOpenBracket(content, endPos + 1);
+						startPos++;
+						// endPos--;
+						// blockCode = content.substring(startPos, endPos + 1);
+
+						// TODO check if `endPos + 1` is necessery???
+
+						// if(curPos > startPos){
+						// 	if(curPos <= endPos){ // Cursor in hidden block
+						// 		curPos = startPos + 13;
+						// 	}else{ // Cursor was after hidden block
+						// 		curPos -= blockCode.length - 12; 
+						// 	}
+						// } 
+						// console.log('CLOSE start: `%s` end: `%s`', content.substring(0, startPos), content.substring(endPos));
+						// console.log('CLOS2 start: `%s` end: `%s`', content.substring(0, startPos), content.substring(endPos + 1));
+						// content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos + 1);
+					}
+
+					blockCode = content.substring(startPos, endPos); 
+					this.model._hiddenLinePattern.lastIndex = 0;
+					
+					if (this.model._hiddenLinePattern.test(blockCode)) {
+						return ;
+					} 
+
+					content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos);
+
+					if(curPos > startPos){
+						if(curPos <= endPos){ // Cursor in hidden block
+							curPos = startPos + 13;
+						}else{ // Cursor was after hidden block
+							curPos -= blockCode.length - 12; 
+						}
+					} 
+
+					posData.sel.removeAllRanges();
+					this.htmlEdit.setText(content)
+					posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
+
+				}else if($target.classList.contains('sh-codeblock')){
+					e.preventDefault();
+					e.stopPropagation();
+					var 	codeBlockId = $target.dataset.id,
+							blocks = this.model.get('blocks');
+							codeBlock = blocks[codeBlockId],
+							content = this.model.get('content'),
+							posData = this.htmlEdit.getSelection(),
+							curPos = posData.end,
+							codeBlockSpace = '%b' + codeBlockId + 'b%',
+							blockSpacePos = this.htmlEdit.getElementPos($target);
+							
+
+					console.log('codeBlockId: %s', codeBlockId);
+					console.log(codeBlock);
+					console.dir(this);
+
+					content = content.replace(codeBlockSpace, codeBlock);
+					blocks[codeBlockId] = null;
+					delete blocks[codeBlockId];
+
+					if(curPos > blockSpacePos){
+						curPos += codeBlock.length - codeBlockSpace.length; 
+					}
+
+					posData.sel.removeAllRanges();
+					this.htmlEdit.setText(content);
+					posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
+				}
+			}.bind(this);
+			// Need to restore blocks at copying blocks
+			this.htmlEdit._hooks.oncopy = function(code){
+				console.log('Oncopy hook');
+				console.log(code)
+				var upd = this.model.getSource(code);
+				console.log(code);
+				return upd;
+			}.bind(this);
+
+			this.htmlEdit._hooks.onpaste = function(text){
+				if(text.length > 10000){
+					var 	repit = true,
+							_model = this.model;
+
+					while(repit){
+						repit = false;
+						text = text.replace(/(\{[^\{\}]+\})/ig, function(str, blockCode){
+							repit = true;
+							return '%b' + _model.createCodeBlock(blockCode) + 'b%';
+						});	
+						console.log('Paste Hook loop repit %s', repit);
+					}
+				}
+
+				// console.log('Onpaste hook');
+				// console.log(text);
+				return text;
+			}.bind(this);			
 		}
+
+		// Hook for decoding selection with encoded uncode characters
+		this.htmlEdit._hooks.ALT_U = function(fragment){
+			if(/\\u[a-h0-9]{4}/.test(fragment)){
+				return fragment.replace(/\\u([a-h0-9]{4})/ig, function(sub, code){
+					return String.fromCharCode(parseInt(code, 16));
+				});	
+			}else{
+				return fragment;
+			}
+		};
 
 		if(conf.highlight && conf.highlight.commOpen){
 			var 	_O = conf.highlight.commOpen, // Aka "Open"
@@ -2476,7 +2862,7 @@ if(ENV.DPROVIDER){
 				}
 			}else if(e.altKey){
 				if(e.keyCode == 39){ // [Alt + Right]
-					App.bus.trigger('focus_next_doc', this);
+					this.parent.bus.trigger('focus_next_doc', this);
 				}else if(e.keyCode == 82){ // [ALT + R]
 					this.model.trigger('reloadMainFrame');
 				}/*else{
@@ -2486,9 +2872,13 @@ if(ENV.DPROVIDER){
 			}
 		},
 		// use onkeyup event to observe by cursor position (need to restore previous position while navigation between documents)
-		'onkeyup': function(){
-			var posData = this.htmlEdit.getSelection();
-			this._lastPos = posData.end;
+		'onkeyup': function(e){
+			if(!(e.altKey && e.keyCode == 39)){
+				var posData = this.htmlEdit.getSelection();
+				this._lastPos = posData.end;
+				// console.log('Safe pos: %s id: %s', this._lastPos, this.model.get('id'));	
+			}
+			
 		},
 		'onclick close': function(){
 			this.model.trigger('close', this.model, this);
@@ -2500,9 +2890,12 @@ if(ENV.DPROVIDER){
 			this.model.change('focus', true);
 		},
 		'onblur edit': function(){
+			// At Safary it is imposible to call getSelection() on not focused element! So it would be exception
+			// Turn off to fix bug:
 			// Try to store cursor position
-			var posData = this.htmlEdit.getSelection();
-			this._lastPos = posData.end;
+			// var posData = this.htmlEdit.getSelection();
+			// this._lastPos = posData.end;
+
 			this.model.change('focus', false);
 		},
 	};
@@ -2511,7 +2904,9 @@ if(ENV.DPROVIDER){
 		Backside.View.prototype.remove.call(this);
 	};
 	EditView.prototype.getSource = function(){
-		return this.htmlEdit.el.textContent;
+		// return this.htmlEdit.el.textContent;
+		console.log('CALL EditView::getSource ');
+		return this.model.getSource();
 	};
 
 	return EditView;
@@ -2563,24 +2958,24 @@ if(ENV.DPROVIDER){
 	};
 	FrameView.prototype.clearSubResources = function(){
 		var 	i = this._url_resources.length;
-		
+
 		while(i-- > 0){
-			this._model_resources[i].off('reloadMainFrame');
+			if (this._model_resources[i]) {
+				this._model_resources[i].off('reloadMainFrame');	
+			} 
 		}
 
 		i = this._url_resources.length;
 		while(i-- > 0){
+			// revokeObjectURL() for clearing ObjectUrl instances (https://developer.mozilla.org/ru/docs/Web/API/URL/createObjectURL)
 			URL.revokeObjectURL(this._url_resources[i]);
 		}
 		this._model_resources.length = 0;
 		this._url_resources.length = 0;
 	}
-	// Attention, read: https://developer.mozilla.org/ru/docs/Web/API/URL/createObjectURL
-	// TODO  use URL.revokeObjectURL() for clearing ObjectUrl instances
 	FrameView.prototype.refresh = function(){ // send reference on application
 		this.clearSubResources();
-
-		var 	source = this.model.get('content'),
+		var 	source = this.model.getSource(),
 				_app = this.appModel,
 				_docs = _app.get('docs'),
 				_self = this,
@@ -2597,7 +2992,7 @@ if(ENV.DPROVIDER){
 					_self.refresh();
 				});
 
-				var 	code = docModel.get('content'),
+				var 	code = docModel.getSource(),
 						blob = new Blob([code], {type: docModel.get('mime')}),
 						url = URL.createObjectURL(blob);
 
@@ -2611,25 +3006,19 @@ if(ENV.DPROVIDER){
 		});
 		
 
-		if(false){
-			htmlBlob = new Blob([html], {type: 'text/html'});
-			this.controls.frame.src = URL.createObjectURL(htmlBlob);	
-		}else{ // Old school method
-			if(!this.controls.frame || !this.controls.frame.contentWindow){
-				console.log('DEBUG');
-				console.dir(this);
-			}
-			// console.log('FRAME');
-			// console.dir(this.controls.frame);
+		if (true) {
+			let docUrl = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
+			this.controls.frame.src = docUrl;
+			this._url_resources.push(docUrl);
+		} else { 
+			// Old school method
+			// Attention: if document need load external resources (<script src="http://">) there would be troubles after document reloading!
 			var doc = this.controls.frame.contentWindow.document;
 			doc.open();
 			doc.write(html);
 			doc.close();				
 		}
 		
-		// console.log('DEBUG title `%s`', this.model.get('title'));
-		// console.dir(this.controls.header);
-		// console.dir(this)
 		this.controls.header.textContent = this.model.get('title');
 	};
 	FrameView.prototype.events = {
@@ -2639,14 +3028,28 @@ if(ENV.DPROVIDER){
 		'onclick reload': function(){
 			this.refresh();
 		},
-		'onload frame': function(e){
-			this.controls.header.textContent = this.controls.frame.contentDocument.title
+		'onload frame': function(e) {
+			if (
+				// Document may not contain a <title> tag
+				this.controls.frame.contentDocument.title && 
+				this.controls.frame.contentDocument.title.length > 0 
+			) {
+				this.controls.header.textContent = 'View: ' + this.controls.frame.contentDocument.title;
+			}
 		},
 		'onclick separate': function(e){
-			// create independent instance of page
-			var 	urlOnDoc = URL.createObjectURL(new Blob([this.html], {type: 'text/html'}));
+			// Create independent instance of page
+			var 	_url = URL.createObjectURL(new Blob([this.html], {type: 'text/html'})),
+				 	_window = window.open(_url, '_blank');
+					_handler = function (e) {
+						console.log('beforeunload');
+						console.dir(e);
 
-			window.open(urlOnDoc, '_blank');
+						URL.revokeObjectURL(_url);
+						_window.removeEventListener('beforeunload', _handler);
+					};
+
+			_window.addEventListener('beforeunload', _handler);
 		},
 	};
 
@@ -2692,11 +3095,11 @@ if(ENV.DPROVIDER){
 			this.controls.header.textContent = title;
 		});
 		this.controls.frame.onload = function(e){
-			this.updateContent(e.target.contentDocument, this.model.get('content'));
+			this.updateContent(e.target.contentDocument, this.model.getSource());
 		}.bind(this);
 	};
 	JsConsole.prototype.refresh = function(){ // send reference on application
-		var 	source = this.model.get('content');
+		var 	source = this.model.getSource();
 
 		this.controls.frame.contentWindow.location.reload();
 		this.controls.header.textContent = this.model.get('title');
@@ -2737,6 +3140,34 @@ if(ENV.DPROVIDER){
 			return UNESCAPE_MAP[m];
 		});
 	};
+	
+	
+	E.abc = {
+		load: async function(url_s) {
+			return new Promise(function(res, rej){
+					let $script = document.createElement('script');
+					$script.setAttribute('src', url_s);
+					$script.onload = function(){
+						res();
+					};
+					$script.onerror = function(){
+						rej();
+					};
+					
+					if(document.readyState != 'complete') {
+						document.onreadystatechange = function(){
+							if(document.readyState == 'complete'){
+								document.body.appendChild($script);
+							}
+						};
+					} else {
+						document.body.appendChild($script);
+					}
+			});
+		}
+	};
+	E._console = _console;
+	
 	E.console = {
 		log: function(){
 			var 	len = arguments.length,
@@ -2753,7 +3184,7 @@ if(ENV.DPROVIDER){
 			document.write('<p>' + s.replace(/\\n/g, '<br/>&#8203;') + '</p>');
 		},
 		dir: function(o){
-			document.write('<p>' + JSON.stringify(o, null, '\\t') + '</p>');
+			document.write('<pre>' + JSON.stringify(o, null, '\\t') + '</pre>');
 		},
 		clear: function(){
 			document.body.innerHTML = '';
@@ -2826,11 +3257,11 @@ if(ENV.DPROVIDER){
 			this.controls.header.textContent = title;
 		});
 		this.controls.frame.onload = function(e){
-			this.updateContent(e.target.contentDocument, this.model.get('content'));
+			this.updateContent(e.target.contentDocument, this.model.getSource());
 		}.bind(this);
 	};
 	MarkdownViewer.prototype.refresh = function(){ // send reference on application
-		var 	source = this.model.get('content');
+		var 	source = this.model.getSource();
 
 		this.controls.frame.contentWindow.location.reload();
 		this.controls.header.textContent = this.model.get('title');
@@ -2848,52 +3279,54 @@ if(ENV.DPROVIDER){
 	MarkdownViewer.prototype.updateContent = function(doc, source){
 		doc.open()
 		doc.write('<style>html{font:12px/16px Arial;color:#333;}body{margin:8px;}p{margin:0 0 8px 0;}pre{display:block;padding:8px;margin: 0 0 1em 0;background:#3a3c56;color:#fff;tab-size:4;}.markdown-code{padding:0 2px;background:#26a75a;color:#fff;}p{margin: 0 0 8px 0;}a{color:#1459dd;}ul{padding: 0 0 0 20px;}</style>');
-		doc.write(source
-			.replace( 
-				// /((?:\s*\-\s+.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+?)(.+)\n|([\s\S]*?)(?:\n\s+|\#|\n\s*\-)/g, 
-				/((?:\s*?\-\s+.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+?)(.+)\n/g, 
-				function(substr, list_items, code_type, code, title_type, title_text){
-					if(list_items){
-						return '<ul>' + list_items.
-							split('- ').
-							map(s => s.trimLeft()).
-							filter(s => s.length > 0).
-							map(s => '<li>' + Backside._.escape(s.trimLeft()) + '</li>').
-							join('') + 
-						'</ul>';	
-					}else if(code != null){
-						// TODO handle code_type.trim()
-						return '<pre>' + Backside._.escape(code) + '</pre>';
-					}else if(title_type){
-						title_type = 'h' + title_type.trim().length;
-						return '<' + title_type + '>' + Backside._.escape(title_text || '') + '</' + title_type + '>';
-					}/*else if(article != null){
-						return '\n<p>' + (article).replace(/\s{2}\n/g, '<br/>') + '</p>\n';
-					}*/
-				})	
-			.replace(
-				/([\s\S]*?)(?:\n\s+|\#|\n\s*\-)/g,
-				function(substr, article){
-					if(article != null){
-						return '\n<p>' + (article).replace(/\s{2}\n/g, '<br/>') + '</p>\n';
-					}
-				})
-			.replace(
-				// /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|`(.*?)`|([*]{3})|([\-]{3})|(\n)/g, 
-				/\[([^\]]*)\]\(([^\)]*)\)|`(.*?)`|([*]{3})|([\-]{3})/g, 
-				function(substr, hyp_text, hyp_link, inline_code, astericks, dashes/*, newLine*/){
-					if(hyp_text != null){
-						return '<a href="' + Backside._.escape(hyp_link || '') + '" target="_blank">' + Backside._.escape(hyp_text) + '</a>';
-		            }else if (inline_code != null){
-						return '<i class="markdown-code">' + Backside._.escape(inline_code) + '</i>';
-					}else if(astericks != null || dashes != null){
-						return '<hr/>';
-					}/*else if(newLine){
-						return '<br/>';
-					}*/
-				})
+		// DEPRICATED
+		// doc.write(source
+		// 	.replace( 
+		// 		// /((?:\s*\-\s+.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+?)(.+)\n|([\s\S]*?)(?:\n\s+|\#|\n\s*\-)/g, 
+		// 		/((?:\s*?\-\s+.*\n?)+)|```(.+)?\n([\s\S]*?)```|(\#+\s+?)(.+)\n/g, 
+		// 		function(substr, list_items, code_type, code, title_type, title_text){
+		// 			if(list_items){
+		// 				return '<ul>' + list_items.
+		// 					split('- ').
+		// 					map(s => s.trimLeft()).
+		// 					filter(s => s.length > 0).
+		// 					map(s => '<li>' + Backside._.escape(s.trimLeft()) + '</li>').
+		// 					join('') + 
+		// 				'</ul>';	
+		// 			}else if(code != null){
+		// 				// TODO handle code_type.trim()
+		// 				return '<pre>' + Backside._.escape(code) + '</pre>';
+		// 			}else if(title_type){
+		// 				title_type = 'h' + title_type.trim().length;
+		// 				return '<' + title_type + '>' + Backside._.escape(title_text || '') + '</' + title_type + '>';
+		// 			}else if(article != null){
+		// 				return '\n<p>' + (article).replace(/\s{2}\n/g, '<br/>') + '</p>\n';
+		// 			}
+		// 		})	
+		// 	.replace(
+		// 		/([\s\S]*?)(?:\n\s+|\#|\n\s*\-)/g,
+		// 		function(substr, article){
+		// 			if(article != null){
+		// 				return '\n<p>' + (article).replace(/\s{2}\n/g, '<br/>') + '</p>\n';
+		// 			}
+		// 		})
+		// 	.replace(
+		// 		// /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|`(.*?)`|([*]{3})|([\-]{3})|(\n)/g, 
+		// 		/\[([^\]]*)\]\(([^\)]*)\)|`(.*?)`|([*]{3})|([\-]{3})/g, 
+		// 		function(substr, hyp_text, hyp_link, inline_code, astericks, dashes/*, newLine*/){
+		// 			if(hyp_text != null){
+		// 				return '<a href="' + Backside._.escape(hyp_link || '') + '" target="_blank">' + Backside._.escape(hyp_text) + '</a>';
+		//             }else if (inline_code != null){
+		// 				return '<i class="markdown-code">' + Backside._.escape(inline_code) + '</i>';
+		// 			}else if(astericks != null || dashes != null){
+		// 				return '<hr/>';
+		// 			}/*else if(newLine){
+		// 				return '<br/>';
+		// 			}*/
+		// 		})
 			
-		);
+		// );
+		doc.write(marked(source));
 		doc.close();
 	};
 	MarkdownViewer.prototype.events = {
@@ -2919,12 +3352,47 @@ if(ENV.DPROVIDER){
 // DocumentModel 
 //==========================================
 ;DPROVIDER.define(null, function DocumentModel(){
-	var DocumentModel = Backside.extend(function(conf){
-		Backside.Model.call(this, conf);
-	}, Backside.Model);		
-	DocumentModel.prototype.getPresentationID = function(){
-		return this.get('id') + '-' + this.get('mime');
-	}
+	class DocumentModel extends Backside.Model{
+		constructor(conf){
+			super(conf);
+			this.attr.blocks = conf.blocks || {};
+		}
+		getPresentationID(){
+			return this.get('id') + '-' + this.get('mime');
+		}
+		createCodeBlock(code){
+			var id = this.genearateId();
+
+			this.attr.blocks[id] = code;
+			return id;
+		}
+		genearateId(){
+			var r = ~~(Math.random() * 100000000);
+
+			return this.attr.blocks[r] != undefined ? this.genearateId() : r;
+		}
+		getSource(text){
+			var 	code = text != undefined ? text : this.get('content'),
+					_blocks = this.get('blocks'),
+					_isNeedContinue = false;
+
+			this._hiddenBlockPattern.lastIndex = 0;
+
+			code = code.replace(this._hiddenBlockPattern, function(sub, blockCode){
+				_isNeedContinue = true;
+				return _blocks[blockCode];
+			});
+
+			// resolve nested hidden blocks
+			return _isNeedContinue ? this.getSource(code) : code;
+		}
+
+	};
+
+	DocumentModel.prototype._hiddenBlockPattern = /\%b(\d+)b\%/g;
+	DocumentModel.prototype._hiddenLinePattern = /^\%b(\d+)b\%$/;
+	DocumentModel._exportedProperties = ['title', 'mime', 'content', 'blocks'];
+
 	return DocumentModel;
 });
 //==========================================
@@ -2986,10 +3454,11 @@ if(ENV.DPROVIDER){
 			_counter: this._counter,
 		};
 
-		this.export(['current_doc', 'gridScheme', 'grid_id', 'opened_ids', 'title'], prj.model);
+		this.export(['current_doc', 'gridScheme', 'grid_id', 'opened_ids', 'title', 'blocks'], prj.model);
 
 		for(id in docs){
-			prj.model.docs[id] = docs[id].export(['title', 'mime', 'content']);
+			// todo ovveride export() method
+			prj.model.docs[id] = docs[id].export(DocumentModel._exportedProperties);
 		}
 
 		return prj;
@@ -3086,8 +3555,9 @@ if(ENV.DPROVIDER){
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v158 2017/09/27
-	var VER = 158;
+	// Editor with syntax highlighting v177 2019/06/03
+	// (C) 2015-2019
+	var VER = 178;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
@@ -3101,7 +3571,7 @@ if(ENV.DPROVIDER){
 		ok: 'Ok',
 		btn_cancel: 'Cancel',
 		btn_apply: 'Apply',
-		aboutApp: 'About ABC v 0.4.%d',
+		aboutApp: 'About ABC v 0.5a.%d',
 		unvalid_json_data: 'Unvalid json data',
 		close: 'Close',
 		start_test_prj: 'Start test project',
@@ -3111,6 +3581,10 @@ if(ENV.DPROVIDER){
 		rename_document: 'Rename document',
 		popupRenameDoc_title: 'Rename document \"%s\"',
 		popupRenameDoc_fnamePlaceholder: 'New document name',
+		// settingDialog_title: 'Settings',
+		settingDialog_label_replaceTabBySpace: 'replace tab by spaces',
+		settingDialog_label_tabSize: 'tab size',
+		settingDialog_header_contentSettings: 'Content settings',
 	};
 	var ExtMimeMap = {
 		'html':   'text/html',
@@ -3282,18 +3756,20 @@ if(ENV.DPROVIDER){
 			}
 		});
 		this.listen('change:theme', function(themeId){
-			var 	className = 'sc_layout-right grid_column';
+			var 	className = 'sc_layout-right grid_column ';
 			
 			if(themeId == 'dark'){
-				className += ' theme-dark';
+				className += 'theme-dark';
 			}else if(themeId == 'theme-a'){ 
-				className += ' theme-a';
+				className += 'theme-a';
 			}else if(themeId == 'theme-b'){ 
-				className += ' theme-b';
+				className += 'theme-b';
 			}else if(themeId == 'theme-c'){ 
-				className += ' theme-c';
+				className += 'theme-c';
 			}else if(themeId == 'theme-d'){ 
-				className += ' theme-d';
+				className += 'theme-d';
+			}else if(themeId == 'theme-e'){ 
+				className += 'theme-e';
 			}
 
 			this.controls.grid.className = className;
@@ -3331,7 +3807,11 @@ if(ENV.DPROVIDER){
 				if(subView = this.subView[checkList[i]]){
 					if(subView.htmlEdit){
 						subView.htmlEdit.el.focus();
-						subView.htmlEdit.setCursor(subView._lastPos);
+						console.log('Offest %s id: %s', subView._lastPos, subView.model.get('id'))
+						setTimeout(function(){
+							subView.htmlEdit.setCursor(subView._lastPos || 0);
+						}, 60);
+						subView.htmlEdit.setCursor(subView._lastPos || 0);
 						break;
 					}
 				}
@@ -3354,7 +3834,7 @@ if(ENV.DPROVIDER){
 		this.changeGrid(this.model.get('grid_id'));
 		this.model.change('opened_ids', openedIds);
 		this._stayFocusOnDoc(this.model.get('current_doc'));
-		this.controls.projectTitle.value = this.model.get('title');
+		this.controls.projectTitle.value = this.model.get('title') || 'noname';
 
 		CtxMenu2({
 			label: this.controls.toppanelMenuLabel,
@@ -3464,6 +3944,7 @@ if(ENV.DPROVIDER){
 						}.bind(this)
 					});
 				}else{
+					console.log('before change current_doc %s', $tab.dataset.id);
 					this.model.change('current_doc', $tab.dataset.id);
 				}
 			}
@@ -3589,6 +4070,45 @@ if(ENV.DPROVIDER){
 		'onchange selectGrid': function(e){
 			this.model.change('grid_id', e.target.value);
 		},
+		'onclick settingsBtn': function(e) {
+			console.log('[Click settings]');
+			console.dir(this);
+			// TODO May be better to set popup title undefined
+			// TODO get settings from project settings block
+
+			(new $UI.Popup({
+				className: 'dwc_popup ppp_base',
+				content: 
+					'<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
+
+					'<h3 class="sc_header2">' + VOC.settingDialog_header_contentSettings +'</h3>' +
+					
+					'<label class="control-list-item sc_article1">' +
+						'<input class="control-list-item_control" type="checkbox"/>' +
+						'<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +
+					'</label>' +
+					
+					'<div class="control-list-item sc_article1">' +
+						'<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
+						'<span class="control-list-item_label">' + VOC.settingDialog_label_tabSize + '</span>' +
+					'</div>' +
+				'',
+				events: {
+					'close click': function(e){
+						e.stopPropagation();
+						this.close();
+					},	
+				}
+			}, {
+				onopen: function(){
+
+				},
+				onclose: function(){
+
+				}
+			})).open();
+
+		},
 		'onchange selectTheme': function(e){
 			var theme = 'light';
 			switch(e.target.value){
@@ -3597,6 +4117,7 @@ if(ENV.DPROVIDER){
 				case 'theme-b': theme = 'theme-b'; break;
 				case 'theme-c': theme = 'theme-c'; break;
 				case 'theme-d': theme = 'theme-d'; break;
+				case 'theme-e': theme = 'theme-e'; break;
 			}
 			this.model.change('theme', theme);
 		},
@@ -3677,11 +4198,20 @@ if(ENV.DPROVIDER){
 			highlight: hInstance,
 			model: docModel,
 			// Turn off line numeration for Markdown
-			numerateLines: docModel.get('mime') != 'text/markdown' 
+			numerateLines: docModel.get('mime') != 'text/markdown',
+			parent: this, // Reference to the application
 		});
 
-		view.htmlEdit.setText(docModel.get('content') || ' ');
+		view.htmlEdit.setText(docModel.get('content') || '');
 		view.htmlEdit.setCaretPos(0);
+		view.htmlEdit._history.add({
+			text: docModel.get('content') || '',
+			start: 0,
+			end: 0
+		});
+
+		// view.htmlEdit.resetCode(docModel.get('content') || '', 0, 0);
+
 		view.el.style.display = 'none';
 		this.subView[id] = view;
 		
@@ -3709,6 +4239,8 @@ if(ENV.DPROVIDER){
 		}.bind(this));
 		docModel.on('change:focus', function(isFocus, m){
 			var docListItem = this.listItems[m.get('id')];
+
+			console.log('[TRIG change:focus] id: %s', m.get('id'));
 
 			docListItem && docListItem.classList[isFocus ? 'add' : 'remove']('__current');
 		}.bind(this));
@@ -3743,7 +4275,17 @@ if(ENV.DPROVIDER){
 			// TODO backUp model
 			if(LOCALSTORAGE_AVAILABLE){
 				setTimeout(function(){
-					window.localStorage['lastsnapshot'] = JSON.stringify(_prjModel.createProjectSnapshot());
+					try{
+						window.localStorage['lastsnapshot'] = JSON.stringify(_prjModel.createProjectSnapshot());	
+					}catch(e){
+						console.warn('Error while writing at localStorage');
+						console.dir(e);
+
+						if(e.name == 'QuotaExceededError'){
+							console.log("Not enought spaces granted for localStorage");
+						}
+					}
+					
 				}, 200);	
 			}
 		});
@@ -3902,12 +4444,18 @@ if(ENV.DPROVIDER){
 				'startTestPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
-					App.controls.loadTestProject.click();
+					// App.controls.loadTestProject.click();
+					if(App.model) App.model.destroy(); // Trigger destroy event
+
+					App.initProject(DPROVIDER.require('testProject'));
 				},
 				'startDefaultPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
-					App.controls.loadDefaultProject.click();
+					// App.controls.loadDefaultProject.click();
+					if(App.model) App.model.destroy(); // Trigger destroy event
+
+					App.initProject(DPROVIDER.require('defaultProject'));
 				},
 				'toggleBtn click': function(e){
 					e.preventDefault();
@@ -4008,6 +4556,284 @@ if(ENV.DPROVIDER){
 	};
 	return MainView;
 });
+//================================================================================
+// Test project
+//================================================================================
+;DPROVIDER.define('testProject', ['DocumentModel', 'ProjectModel'], function(DocumentModel, ProjectModel){
+	// ATTENTION: documentId must be a string!
+	var projectModel = new ProjectModel({
+		title: 'dev',
+		grid_id: '4', // схема раскладки
+		opened_ids: ['0', '1', null, '3'], // открытые документы
+		// grid_id: '7', // схема раскладки
+		// opened_ids: ['0'], // открытые документы
+		current_doc: '0', // id of current focused doc
+		docs: {},
+	});
+	projectModel.add([
+		new DocumentModel({
+			title: 'index.html',
+			mime: 'text/html',
+			content:
+				'<!DOCTYPE html>\n' +
+				'<html>\n' +
+				'	<head>\n' +
+				'		<meta charset="utf-8">\n' +
+				'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
+				'	</head>\n' +
+				'	<body>\n' +
+				'		<h1 style="">Hello world!</h1>\n' +
+				'		<script src="./script.js"></script>\n' +
+				'	</body>\n' +
+				'</html>\n'
+		}),
+		new DocumentModel({
+			title: 'style.css',
+			mime: 'text/css',
+			content: 
+				':root{\n' +
+				'	color: #cccccc;\n' +
+				'}\n' +
+				'html{ font: 13px/18px Arial; }	\n' +
+				'body{ margin: 0; }\n' +
+				'button, input{ font-family: inherit; }\n' +
+				'table{ border-collapse: collapse; }\n' +
+				'#id32:not(.abc){ \n' +
+				'	width: calc(var(--abc) + 32px); \n' +
+				'	margin: -1.31em; /* .25x desired size */ \n' +
+				'	height: 5.24em;  /* 2x desired size */ \n' +
+				'	width: 5.24em;   /* 2x desired size */ \n' +
+				'	transform: scale(.5); \n' +
+				'} \n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'script.js',
+			mime: 'application/javascript',
+			content: 
+				'// single line comment\n' +
+				'var lines = selectedText.split(\'\\n\').map(str => str.charCodeAt(0) == 9 ? str.substring(1) : str);\n' +
+				'/* Double quoteas comment */ var str = "abc";/* multi\n' +
+				'	line\n' +
+				'comment	*/\n' +
+				'var str = \'abc\';\n' +
+				'var str = \'ab\\\n' +
+				'c\';\n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'readme.txt',
+			mime: 'text/plain',
+			content: 'qwerty\nasdfghjkl\nzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnm\n1234567890123456789012345678901234567890123456789012345678901234567890\n1234567890\n1234567890\n1234567890\n1234567890\n'
+		}),
+		new DocumentModel({
+			title: 'test.xml',
+			mime: 'text/xml',
+			content: 
+					'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"	xmlns:content="http://purl.org/rss/1.0/modules/content/"\n' +
+				'	xmlns:wfw="http://wellformedweb.org/CommentAPI/"\n' +
+				'	xmlns:dc="http://purl.org/dc/elements/1.1/"\n' +
+				'	xmlns:atom="http://www.w3.org/2005/Atom"\n' +
+				'	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"\n' +
+				'	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"\n' +
+				'>\n' +
+				'<channel>\n' +
+				'	<title>Internship &#8211; French Tech Côte d&#039;Azur</title>\n' +
+				'	<atom:link href="http://www.clubbusiness06.com/feed/" rel="self" type="application/rss+xml" />\n' +
+				'	<description><![CDATA[<p>Vu sur <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a></p>\n' +
+				'		<p style="font-size:14px; color:#666666; text-align:justify; font-family:Arial, Helvetica, sans-serif;font-weight:bold;">L\u2019engagement associatif est plus que jamais au c\u0153ur de nos pr\u00e9occupations. L\u2019Associatif Azur\u00e9en et ses partenaires s\u2019efforcent tous les ans de mettre en lumi\u00e8re les associations azur\u00e9ennes, leurs initiatives et leur \u0153uvre. <br />\n' +
+				'		Pour atteindre cet objectif, l\u2019Associatif Azur\u00e9en, organisera cette ann\u00e9e, en collaboration avec L\u2019Ordre Associatif Mon\u00e9gasque, la 4\u00e8me NUIT DES ASSOCIATIONS, \u00e9dition C\u00f4te d\u2019Azur, le Samedi 12 Novembre 2016 au Palais de la M\u00e9diterran\u00e9e. Ce d\u00eener de gala, dont les b\u00e9n\u00e9fices seront redistribu\u00e9s aux associations azur\u00e9ennes, sera l\u2019occasion d\u2019honorer plusieurs b\u00e9n\u00e9voles, qui se verront remettre les m\u00e9dailles de l\u2019Ordre Associatif Mon\u00e9gasque, afin de r\u00e9compenser leur engagement. Lors de l\u2019\u00e9v\u00e9nement, le troph\u00e9e \u00ab Les Anges du Rocher \u00bb, oscar du secteur associatif, sera remis \u00e0 une association azur\u00e9enne, particuli\u00e8rement m\u00e9ritante, s\u00e9lectionn\u00e9e par notre comit\u00e9.</p>\n' +
+				'		<p><a href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">Lire la suite <span class="meta-nav"></span></a></p>\n' +
+				'		<p>Cet article <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a> est apparu en premier sur <a rel="nofollow" href="http://www.clubbusiness06.com">CLUB BUSINESS 06</a>.</p>\n' +
+				'	]]></description>\n' +
+				'	<dc:creator><![CDATA[Emmanuel GAULIN]]></dc:creator>\n' +
+				'	<category><![CDATA[2. Ev\u00e8nements du Club]]></category>\n' +
+				'</channel>\n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'translate.po',
+			mime: 'text/gettext',
+			content: 
+				'msgid ""\n' +
+				'msgstr ""\n' +
+				'	"Language: en_US\\n"\n' +
+				'	"MIME-Version: 1.0\\n"\n' +
+				'	"Content-Type: text/plain; charset=UTF-8\\n"\n' +
+				'	"Content-Transfer-Encoding: 8bit\\n"\n' +
+				'\n' +
+				'# comment\n' +
+				'msgctxt "license"\n' +
+				'msgid "License"\n' +
+				'msgstr "License"\n' +
+				'\n' +
+				'msgctxt "5_days_left"\n' +
+				'msgid "1 day"\n' +
+				'msgid_plural "%d day\\"newbie\\""\n' +
+				'msgstr[0] "1 day"\n' +
+				'msgstr[1] "%d days"\n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'data.json',
+			mime: 'application/json',
+			content: 
+				'{"abc":"13","xyz":{"field1":"value1"}}\n' +
+				'{"abc":"13","xyz":{"field1":"value1"}}\n' +
+				'{"abc":"13","xyz":{"field1":"value1"}}' +
+				''
+		}),
+		new DocumentModel({
+			title: 'test.md',
+			mime: 'text/markdown',
+			content: 
+				'testtext\n' +
+				'[emptylink]()\n' +
+				'\n'+
+				'[yandex](http://yandex.ru)\n' +
+				'\n' +
+				'# ng Bookdddstay\n' +
+				'Stay on page 167\n' +
+				'\n' +
+				'text1  \n' +
+				'text2  \n' +
+				'text3\n' +
+				'\n' +
+				'\n' +
+				'\n' +
+				'\ttext\n' +
+				' \n' +
+				'sss \n' +
+				'\n' +
+				'\n' +
+				'# Helee\n' +
+				'## loff\n' +
+				'edwedwed\n' +
+				'## sub title3\n' +
+				'abcdefgh\n' +  
+				'abcdefgh\n' +  
+				'### edwedwedwe\n' +
+				'\n' +
+				'Example of command `ss	`fwewfw`sdd`dd`wdedwe` `` `--wswsed-`\n' +
+				'---\n' +
+				'\n' +
+				'#### 1233\n' +
+				'Example  \n' +
+				'\n' +
+				'```html\n' +
+				'<!DOCTYPE html>\n' +
+				'<html>\n' +
+				'	<head>\n' +
+				'		<meta charset="utf-8"/>\n' +
+				'	</head>\n' +
+				'	<body>\n' +
+				'		<h2>Hello world!</h2>\n' +
+				'	</body>\n' +
+				'</html>\n' +
+				'```\n' +
+				'd ddwd\n' +
+				'``` python\n' +
+				'Code listening:\n' +
+				'```\n' +
+				'\n' +
+				'```\n' +
+				'edewd\n' +
+				'```\n' +
+				'\n' +
+				'Text\n' +
+				'**edwe\n' +
+				'dw**\n' +
+				'- abc;\n' +
+				'- xyz;\n' +
+				'- qwerty;\n' +
+				'- 123. \n' + // this cose troubles
+				'\n\n' +
+				'1.	aaa;\n' +
+				'2.	bbb;\n' +
+				'3.	bbb;\n' +
+				'4.	bbb;\n' +
+				'\n\n' +
+				'- abc;\n' +
+				'- xyz;\n' +
+				'	-	 qqq;\n' +
+				'- qwerty;\n' +
+				'\n' +
+				'*11*\n' +
+				'**22**\n' +
+				'***33***\n' +
+				'****44****\n' +
+				'\n' +
+				'another test text\n' +
+				''				
+		}),
+		new DocumentModel({
+			title: 'blocks.js',
+			mime: 'application/javascript',
+			content: 
+				'while(false){\n' +
+				'	1;\n' +
+				'}\n' +
+				'{if(true){\n' +
+				'\t11;\n' +
+				'}\n' +
+				'(function(){\n' +
+				'\t1;\n' +
+				'}())\n' +
+				'}\n'
+		})
+	]);
+	return projectModel;
+});
+//================================================================================
+// Default project
+//================================================================================
+;DPROVIDER.define('defaultProject', ['DocumentModel', 'ProjectModel'], function(DocumentModel, ProjectModel){
+	var projectModel = new ProjectModel({
+		title: 'default',
+		grid_id: '7', // схема раскладки
+		opened_ids: Array(4), // открытые документы
+		current_doc: '0', // id of current focused doc
+		docs: {},
+	});
+	projectModel.add([
+		new DocumentModel({
+			title: 'index.html', // todo rename `fname` -> `title`
+			mime: 'text/html',
+			content: 
+				'<!DOCTYPE html>\n' +
+				'<html>\n' +
+				'	<head>\n' +
+				'		<meta charset="utf-8">\n' +
+				'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
+				'	</head>\n' +
+				'	<body>\n' +
+				'		<h1>Hello world!</h1>\n' +
+				'		<script src="./script.js"></script>\n' +
+				'	</body>\n' +
+				'</html>\n'
+		}),
+		new DocumentModel({
+			title: 'style.css',
+			mime: 'text/css',
+			content: 
+				'html{ font: 13px/18px Arial; }	\n' +
+				'body{ margin: 0; }\n' +
+				'button, input{ font-family: inherit; }\n' +
+				'table{ border-collapse: collapse; }\n'
+		}),
+		new DocumentModel({
+			title: 'script.js',
+			mime: 'application/javascript',
+			content: ''
+		}),
+		new DocumentModel({
+			title: 'readme.txt',
+			mime: 'text/plain',
+			content: ''
+		}),
+	]);
+	return projectModel;
+});
 
 ;DPROVIDER.define(['MainView', 'DocumentModel', 'ProjectModel', 'Configs'], function main(MainView, DocumentModel, ProjectModel, Configs){
 	function parseQuery(query){
@@ -4050,246 +4876,14 @@ if(ENV.DPROVIDER){
 		if(document.readyState == 'complete'){
 			// Create default 
 			App.controls.loadDefaultProject.onclick = function(){
-				App.model && App.model.destroy(); // Trigger destroy event
+				if(App.model) App.model.destroy(); // Trigger destroy event
 
-				var projectModel = new ProjectModel({
-					title: 'default',
-					grid_id: '7', // схема раскладки
-					opened_ids: Array(4), // открытые документы
-					current_doc: '0', // id of current focused doc
-					docs: {},
-				});
-				projectModel.add([
-					new DocumentModel({
-						title: 'index.html', // todo rename `fname` -> `title`
-						mime: 'text/html',
-						content: 
-							'<!DOCTYPE html>\n' +
-							'<html>\n' +
-							'	<head>\n' +
-							'		<meta charset="utf-8">\n' +
-							'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
-							'	</head>\n' +
-							'	<body>\n' +
-							'		<h1>Hello world!</h1>\n' +
-							'		<script src="./script.js"></script>\n' +
-							'	</body>\n' +
-							'</html>\n'
-					}),
-					new DocumentModel({
-						title: 'style.css',
-						mime: 'text/css',
-						content: 
-							'html{ font: 13px/18px Arial; }	\n' +
-							'body{ margin: 0; }\n' +
-							'button, input{ font-family: inherit; }\n' +
-							'table{ border-collapse: collapse; }\n'
-					}),
-					new DocumentModel({
-						title: 'script.js',
-						mime: 'application/javascript',
-						content: ''
-					}),
-					new DocumentModel({
-						title: 'readme.txt',
-						mime: 'text/plain',
-						content: ''
-					}),
-				]);
-				App.initProject(projectModel);
+				App.initProject(DPROVIDER.require('defaultProject'));
 			};
 			App.controls.loadTestProject.onclick = function(){
-				App.model && App.model.destroy(); // Trigger destroy event
-				
-				// ATTENTION: documentId must be a string!
-				var projectModel = new ProjectModel({
-					title: 'dev',
-					grid_id: '4', // схема раскладки
-					opened_ids: ['0', '1', null, '3'], // открытые документы
-					current_doc: '0', // id of current focused doc
-					docs: {},
-				});
-				projectModel.add([
-					new DocumentModel({
-						title: 'index.html',
-						mime: 'text/html',
-						content:
-							'<!DOCTYPE html>\n' +
-							'<html>\n' +
-							'	<head>\n' +
-							'		<meta charset="utf-8">\n' +
-							'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
-							'	</head>\n' +
-							'	<body>\n' +
-							'		<h1 style="">Hello world!</h1>\n' +
-							'		<script src="./script.js"></script>\n' +
-							'	</body>\n' +
-							'</html>\n'
-					}),
-					new DocumentModel({
-						title: 'style.css',
-						mime: 'text/css',
-						content: 
-							':root{\n' +
-							'	color: #cccccc;\n' +
-							'}\n' +
-							'html{ font: 13px/18px Arial; }	\n' +
-							'body{ margin: 0; }\n' +
-							'button, input{ font-family: inherit; }\n' +
-							'table{ border-collapse: collapse; }\n' +
-							'#id32:not(.abc){ \n' +
-							'	width: calc(var(--abc) + 32px); \n' +
-							'	margin: -1.31em; /* .25x desired size */ \n' +
-							'	height: 5.24em;  /* 2x desired size */ \n' +
-							'	width: 5.24em;   /* 2x desired size */ \n' +
-							'	transform: scale(.5); \n' +
-							'} \n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'script.js',
-						mime: 'application/javascript',
-						content: 
-							'// single line comment\n' +
-							'var lines = selectedText.split(\'\\n\').map(str => str.charCodeAt(0) == 9 ? str.substring(1) : str);\n' +
-							'/* Double quoteas comment */ var str = "abc";/* multi\n' +
-							'	line\n' +
-							'comment	*/\n' +
-							'var str = \'abc\';\n' +
-							'var str = \'ab\\\n' +
-							'c\';\n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'readme.txt',
-						mime: 'text/plain',
-						content: 'qwerty\nasdfghjkl\nzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnm\n1234567890123456789012345678901234567890123456789012345678901234567890\n1234567890\n1234567890\n1234567890\n1234567890\n'
-					}),
-					new DocumentModel({
-						title: 'test.xml',
-						mime: 'text/xml',
-						content: 
-	 						'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"	xmlns:content="http://purl.org/rss/1.0/modules/content/"\n' +
-							'	xmlns:wfw="http://wellformedweb.org/CommentAPI/"\n' +
-							'	xmlns:dc="http://purl.org/dc/elements/1.1/"\n' +
-							'	xmlns:atom="http://www.w3.org/2005/Atom"\n' +
-							'	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"\n' +
-							'	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"\n' +
-							'>\n' +
-							'<channel>\n' +
-							'	<title>Internship &#8211; French Tech Côte d&#039;Azur</title>\n' +
-							'	<atom:link href="http://www.clubbusiness06.com/feed/" rel="self" type="application/rss+xml" />\n' +
-							'	<description><![CDATA[<p>Vu sur <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a></p>\n' +
-							'		<p style="font-size:14px; color:#666666; text-align:justify; font-family:Arial, Helvetica, sans-serif;font-weight:bold;">L\u2019engagement associatif est plus que jamais au c\u0153ur de nos pr\u00e9occupations. L\u2019Associatif Azur\u00e9en et ses partenaires s\u2019efforcent tous les ans de mettre en lumi\u00e8re les associations azur\u00e9ennes, leurs initiatives et leur \u0153uvre. <br />\n' +
-							'		Pour atteindre cet objectif, l\u2019Associatif Azur\u00e9en, organisera cette ann\u00e9e, en collaboration avec L\u2019Ordre Associatif Mon\u00e9gasque, la 4\u00e8me NUIT DES ASSOCIATIONS, \u00e9dition C\u00f4te d\u2019Azur, le Samedi 12 Novembre 2016 au Palais de la M\u00e9diterran\u00e9e. Ce d\u00eener de gala, dont les b\u00e9n\u00e9fices seront redistribu\u00e9s aux associations azur\u00e9ennes, sera l\u2019occasion d\u2019honorer plusieurs b\u00e9n\u00e9voles, qui se verront remettre les m\u00e9dailles de l\u2019Ordre Associatif Mon\u00e9gasque, afin de r\u00e9compenser leur engagement. Lors de l\u2019\u00e9v\u00e9nement, le troph\u00e9e \u00ab Les Anges du Rocher \u00bb, oscar du secteur associatif, sera remis \u00e0 une association azur\u00e9enne, particuli\u00e8rement m\u00e9ritante, s\u00e9lectionn\u00e9e par notre comit\u00e9.</p>\n' +
-							'		<p><a href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">Lire la suite <span class="meta-nav"></span></a></p>\n' +
-							'		<p>Cet article <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a> est apparu en premier sur <a rel="nofollow" href="http://www.clubbusiness06.com">CLUB BUSINESS 06</a>.</p>\n' +
-							'	]]></description>\n' +
-							'	<dc:creator><![CDATA[Emmanuel GAULIN]]></dc:creator>\n' +
-							'	<category><![CDATA[2. Ev\u00e8nements du Club]]></category>\n' +
-							'</channel>\n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'translate.po',
-						mime: 'text/gettext',
-						content: 
-							'msgid ""\n' +
-							'msgstr ""\n' +
-							'	"Language: en_US\\n"\n' +
-							'	"MIME-Version: 1.0\\n"\n' +
-							'	"Content-Type: text/plain; charset=UTF-8\\n"\n' +
-							'	"Content-Transfer-Encoding: 8bit\\n"\n' +
-							'\n' +
-							'# comment\n' +
-							'msgctxt "license"\n' +
-							'msgid "License"\n' +
-							'msgstr "License"\n' +
-							'\n' +
-							'msgctxt "5_days_left"\n' +
-							'msgid "1 day"\n' +
-							'msgid_plural "%d day\\"newbie\\""\n' +
-							'msgstr[0] "1 day"\n' +
-							'msgstr[1] "%d days"\n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'data.json',
-						mime: 'application/json',
-						content: 
-							'{"abc":"13","xyz":{"field1":"value1"}}\n' +
-							'{"abc":"13","xyz":{"field1":"value1"}}\n' +
-							'{"abc":"13","xyz":{"field1":"value1"}}' +
-							''
-					}),
-					new DocumentModel({
-						title: 'test.md',
-						mime: 'text/markdown',
-						content: 
-							'testtext\n' +
-							'[emptylink]()\n' +
-							'\n'+
-							'[yandex](http://yandex.ru)\n' +
-							'\n' +
-							'# ng Bookdddstay\n' +
-							'Stay on page 167\n' +
-							'\n' +
-							'text1  \n' +
-							'text2  \n' +
-							'text3\n' +
-							'\n' +
-							'\n' +
-							'\n' +
-							'\ttext\n' +
-							' \n' +
-							'sss \n' +
-							'\n' +
-							'\n' +
-							'# Helee\n' +
-							'## loff\n' +
-							'edwedwed\n' +
-							'## sub title3\n' +
-							'abcdefgh\n' +  
-							'abcdefgh\n' +  
-							'### edwedwedwe\n' +
-							'\n' +
-							'Example of command `ss	`fwewfw`sdd`dd`wdedwe` `` `--wswsed-`\n' +
-							'---\n' +
-							'\n' +
-							'#### 1233\n' +
-							'Example  \n' +
-							'\n' +
-							'```html\n' +
-							'<!DOCTYPE html>\n' +
-							'<html>\n' +
-							'	<head>\n' +
-							'		<meta charset="utf-8"/>\n' +
-							'	</head>\n' +
-							'	<body>\n' +
-							'		<h2>Hello world!</h2>\n' +
-							'	</body>\n' +
-							'</html>\n' +
-							'```\n' +
-							'd ddwd\n' +
-							'``` python\n' +
-							'Code listening:\n' +
-							'```\n' +
-							'\n' +
-							'```\n' +
-							'edewd\n' +
-							'```\n' +
-							'\n' +
-							'Text\n' +
-							'**edwe\n' +
-							'dw**\n' +
-							'- abc;\n' +
-							'- xyz;\n' +
-							'- qwerty;\n' +
-							'- 123. \n' +
-							''
-					})
-				]);
-				App.initProject(projectModel);
+				if(App.model) App.model.destroy(); // Trigger destroy event
+
+				App.initProject(DPROVIDER.require('testProject'));
 			};
 		}
 	}
