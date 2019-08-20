@@ -2,12 +2,47 @@
 // DocumentModel 
 //==========================================
 ;DPROVIDER.define(null, function DocumentModel(){
-	var DocumentModel = Backside.extend(function(conf){
-		Backside.Model.call(this, conf);
-	}, Backside.Model);		
-	DocumentModel.prototype.getPresentationID = function(){
-		return this.get('id') + '-' + this.get('mime');
-	}
+	class DocumentModel extends Backside.Model{
+		constructor(conf){
+			super(conf);
+			this.attr.blocks = conf.blocks || {};
+		}
+		getPresentationID(){
+			return this.get('id') + '-' + this.get('mime');
+		}
+		createCodeBlock(code){
+			var id = this.genearateId();
+
+			this.attr.blocks[id] = code;
+			return id;
+		}
+		genearateId(){
+			var r = ~~(Math.random() * 100000000);
+
+			return this.attr.blocks[r] != undefined ? this.genearateId() : r;
+		}
+		getSource(text){
+			var 	code = text != undefined ? text : this.get('content'),
+					_blocks = this.get('blocks'),
+					_isNeedContinue = false;
+
+			this._hiddenBlockPattern.lastIndex = 0;
+
+			code = code.replace(this._hiddenBlockPattern, function(sub, blockCode){
+				_isNeedContinue = true;
+				return _blocks[blockCode];
+			});
+
+			// resolve nested hidden blocks
+			return _isNeedContinue ? this.getSource(code) : code;
+		}
+
+	};
+
+	DocumentModel.prototype._hiddenBlockPattern = /\%b(\d+)b\%/g;
+	DocumentModel.prototype._hiddenLinePattern = /^\%b(\d+)b\%$/;
+	DocumentModel._exportedProperties = ['title', 'mime', 'content', 'blocks'];
+
 	return DocumentModel;
 });
 //==========================================
@@ -69,10 +104,11 @@
 			_counter: this._counter,
 		};
 
-		this.export(['current_doc', 'gridScheme', 'grid_id', 'opened_ids', 'title'], prj.model);
+		this.export(['current_doc', 'gridScheme', 'grid_id', 'opened_ids', 'title', 'blocks'], prj.model);
 
 		for(id in docs){
-			prj.model.docs[id] = docs[id].export(['title', 'mime', 'content']);
+			// todo ovveride export() method
+			prj.model.docs[id] = docs[id].export(DocumentModel._exportedProperties);
 		}
 
 		return prj;
@@ -169,8 +205,9 @@
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v158 2017/09/27
-	var VER = 158;
+	// Editor with syntax highlighting v177 2019/06/03
+	// (C) 2015-2019
+	var VER = 178;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
@@ -184,7 +221,7 @@
 		ok: 'Ok',
 		btn_cancel: 'Cancel',
 		btn_apply: 'Apply',
-		aboutApp: 'About ABC v 0.4.%d',
+		aboutApp: 'About ABC v 0.5a.%d',
 		unvalid_json_data: 'Unvalid json data',
 		close: 'Close',
 		start_test_prj: 'Start test project',
@@ -194,6 +231,10 @@
 		rename_document: 'Rename document',
 		popupRenameDoc_title: 'Rename document \"%s\"',
 		popupRenameDoc_fnamePlaceholder: 'New document name',
+		// settingDialog_title: 'Settings',
+		settingDialog_label_replaceTabBySpace: 'replace tab by spaces',
+		settingDialog_label_tabSize: 'tab size',
+		settingDialog_header_contentSettings: 'Content settings',
 	};
 	var ExtMimeMap = {
 		'html':   'text/html',
@@ -365,18 +406,20 @@
 			}
 		});
 		this.listen('change:theme', function(themeId){
-			var 	className = 'sc_layout-right grid_column';
+			var 	className = 'sc_layout-right grid_column ';
 			
 			if(themeId == 'dark'){
-				className += ' theme-dark';
+				className += 'theme-dark';
 			}else if(themeId == 'theme-a'){ 
-				className += ' theme-a';
+				className += 'theme-a';
 			}else if(themeId == 'theme-b'){ 
-				className += ' theme-b';
+				className += 'theme-b';
 			}else if(themeId == 'theme-c'){ 
-				className += ' theme-c';
+				className += 'theme-c';
 			}else if(themeId == 'theme-d'){ 
-				className += ' theme-d';
+				className += 'theme-d';
+			}else if(themeId == 'theme-e'){ 
+				className += 'theme-e';
 			}
 
 			this.controls.grid.className = className;
@@ -414,7 +457,11 @@
 				if(subView = this.subView[checkList[i]]){
 					if(subView.htmlEdit){
 						subView.htmlEdit.el.focus();
-						subView.htmlEdit.setCursor(subView._lastPos);
+						console.log('Offest %s id: %s', subView._lastPos, subView.model.get('id'))
+						setTimeout(function(){
+							subView.htmlEdit.setCursor(subView._lastPos || 0);
+						}, 60);
+						subView.htmlEdit.setCursor(subView._lastPos || 0);
 						break;
 					}
 				}
@@ -437,7 +484,7 @@
 		this.changeGrid(this.model.get('grid_id'));
 		this.model.change('opened_ids', openedIds);
 		this._stayFocusOnDoc(this.model.get('current_doc'));
-		this.controls.projectTitle.value = this.model.get('title');
+		this.controls.projectTitle.value = this.model.get('title') || 'noname';
 
 		CtxMenu2({
 			label: this.controls.toppanelMenuLabel,
@@ -547,6 +594,7 @@
 						}.bind(this)
 					});
 				}else{
+					console.log('before change current_doc %s', $tab.dataset.id);
 					this.model.change('current_doc', $tab.dataset.id);
 				}
 			}
@@ -672,6 +720,45 @@
 		'onchange selectGrid': function(e){
 			this.model.change('grid_id', e.target.value);
 		},
+		'onclick settingsBtn': function(e) {
+			console.log('[Click settings]');
+			console.dir(this);
+			// TODO May be better to set popup title undefined
+			// TODO get settings from project settings block
+
+			(new $UI.Popup({
+				className: 'dwc_popup ppp_base',
+				content: 
+					'<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
+
+					'<h3 class="sc_header2">' + VOC.settingDialog_header_contentSettings +'</h3>' +
+					
+					'<label class="control-list-item sc_article1">' +
+						'<input class="control-list-item_control" type="checkbox"/>' +
+						'<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +
+					'</label>' +
+					
+					'<div class="control-list-item sc_article1">' +
+						'<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
+						'<span class="control-list-item_label">' + VOC.settingDialog_label_tabSize + '</span>' +
+					'</div>' +
+				'',
+				events: {
+					'close click': function(e){
+						e.stopPropagation();
+						this.close();
+					},	
+				}
+			}, {
+				onopen: function(){
+
+				},
+				onclose: function(){
+
+				}
+			})).open();
+
+		},
 		'onchange selectTheme': function(e){
 			var theme = 'light';
 			switch(e.target.value){
@@ -680,6 +767,7 @@
 				case 'theme-b': theme = 'theme-b'; break;
 				case 'theme-c': theme = 'theme-c'; break;
 				case 'theme-d': theme = 'theme-d'; break;
+				case 'theme-e': theme = 'theme-e'; break;
 			}
 			this.model.change('theme', theme);
 		},
@@ -760,11 +848,20 @@
 			highlight: hInstance,
 			model: docModel,
 			// Turn off line numeration for Markdown
-			numerateLines: docModel.get('mime') != 'text/markdown' 
+			numerateLines: docModel.get('mime') != 'text/markdown',
+			parent: this, // Reference to the application
 		});
 
-		view.htmlEdit.setText(docModel.get('content') || ' ');
+		view.htmlEdit.setText(docModel.get('content') || '');
 		view.htmlEdit.setCaretPos(0);
+		view.htmlEdit._history.add({
+			text: docModel.get('content') || '',
+			start: 0,
+			end: 0
+		});
+
+		// view.htmlEdit.resetCode(docModel.get('content') || '', 0, 0);
+
 		view.el.style.display = 'none';
 		this.subView[id] = view;
 		
@@ -792,6 +889,8 @@
 		}.bind(this));
 		docModel.on('change:focus', function(isFocus, m){
 			var docListItem = this.listItems[m.get('id')];
+
+			console.log('[TRIG change:focus] id: %s', m.get('id'));
 
 			docListItem && docListItem.classList[isFocus ? 'add' : 'remove']('__current');
 		}.bind(this));
@@ -826,7 +925,17 @@
 			// TODO backUp model
 			if(LOCALSTORAGE_AVAILABLE){
 				setTimeout(function(){
-					window.localStorage['lastsnapshot'] = JSON.stringify(_prjModel.createProjectSnapshot());
+					try{
+						window.localStorage['lastsnapshot'] = JSON.stringify(_prjModel.createProjectSnapshot());	
+					}catch(e){
+						console.warn('Error while writing at localStorage');
+						console.dir(e);
+
+						if(e.name == 'QuotaExceededError'){
+							console.log("Not enought spaces granted for localStorage");
+						}
+					}
+					
 				}, 200);	
 			}
 		});
@@ -985,12 +1094,18 @@
 				'startTestPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
-					App.controls.loadTestProject.click();
+					// App.controls.loadTestProject.click();
+					if(App.model) App.model.destroy(); // Trigger destroy event
+
+					App.initProject(DPROVIDER.require('testProject'));
 				},
 				'startDefaultPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
-					App.controls.loadDefaultProject.click();
+					// App.controls.loadDefaultProject.click();
+					if(App.model) App.model.destroy(); // Trigger destroy event
+
+					App.initProject(DPROVIDER.require('defaultProject'));
 				},
 				'toggleBtn click': function(e){
 					e.preventDefault();
@@ -1091,6 +1206,284 @@
 	};
 	return MainView;
 });
+//================================================================================
+// Test project
+//================================================================================
+;DPROVIDER.define('testProject', ['DocumentModel', 'ProjectModel'], function(DocumentModel, ProjectModel){
+	// ATTENTION: documentId must be a string!
+	var projectModel = new ProjectModel({
+		title: 'dev',
+		grid_id: '4', // схема раскладки
+		opened_ids: ['0', '1', null, '3'], // открытые документы
+		// grid_id: '7', // схема раскладки
+		// opened_ids: ['0'], // открытые документы
+		current_doc: '0', // id of current focused doc
+		docs: {},
+	});
+	projectModel.add([
+		new DocumentModel({
+			title: 'index.html',
+			mime: 'text/html',
+			content:
+				'<!DOCTYPE html>\n' +
+				'<html>\n' +
+				'	<head>\n' +
+				'		<meta charset="utf-8">\n' +
+				'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
+				'	</head>\n' +
+				'	<body>\n' +
+				'		<h1 style="">Hello world!</h1>\n' +
+				'		<script src="./script.js"></script>\n' +
+				'	</body>\n' +
+				'</html>\n'
+		}),
+		new DocumentModel({
+			title: 'style.css',
+			mime: 'text/css',
+			content: 
+				':root{\n' +
+				'	color: #cccccc;\n' +
+				'}\n' +
+				'html{ font: 13px/18px Arial; }	\n' +
+				'body{ margin: 0; }\n' +
+				'button, input{ font-family: inherit; }\n' +
+				'table{ border-collapse: collapse; }\n' +
+				'#id32:not(.abc){ \n' +
+				'	width: calc(var(--abc) + 32px); \n' +
+				'	margin: -1.31em; /* .25x desired size */ \n' +
+				'	height: 5.24em;  /* 2x desired size */ \n' +
+				'	width: 5.24em;   /* 2x desired size */ \n' +
+				'	transform: scale(.5); \n' +
+				'} \n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'script.js',
+			mime: 'application/javascript',
+			content: 
+				'// single line comment\n' +
+				'var lines = selectedText.split(\'\\n\').map(str => str.charCodeAt(0) == 9 ? str.substring(1) : str);\n' +
+				'/* Double quoteas comment */ var str = "abc";/* multi\n' +
+				'	line\n' +
+				'comment	*/\n' +
+				'var str = \'abc\';\n' +
+				'var str = \'ab\\\n' +
+				'c\';\n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'readme.txt',
+			mime: 'text/plain',
+			content: 'qwerty\nasdfghjkl\nzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnm\n1234567890123456789012345678901234567890123456789012345678901234567890\n1234567890\n1234567890\n1234567890\n1234567890\n'
+		}),
+		new DocumentModel({
+			title: 'test.xml',
+			mime: 'text/xml',
+			content: 
+					'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"	xmlns:content="http://purl.org/rss/1.0/modules/content/"\n' +
+				'	xmlns:wfw="http://wellformedweb.org/CommentAPI/"\n' +
+				'	xmlns:dc="http://purl.org/dc/elements/1.1/"\n' +
+				'	xmlns:atom="http://www.w3.org/2005/Atom"\n' +
+				'	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"\n' +
+				'	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"\n' +
+				'>\n' +
+				'<channel>\n' +
+				'	<title>Internship &#8211; French Tech Côte d&#039;Azur</title>\n' +
+				'	<atom:link href="http://www.clubbusiness06.com/feed/" rel="self" type="application/rss+xml" />\n' +
+				'	<description><![CDATA[<p>Vu sur <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a></p>\n' +
+				'		<p style="font-size:14px; color:#666666; text-align:justify; font-family:Arial, Helvetica, sans-serif;font-weight:bold;">L\u2019engagement associatif est plus que jamais au c\u0153ur de nos pr\u00e9occupations. L\u2019Associatif Azur\u00e9en et ses partenaires s\u2019efforcent tous les ans de mettre en lumi\u00e8re les associations azur\u00e9ennes, leurs initiatives et leur \u0153uvre. <br />\n' +
+				'		Pour atteindre cet objectif, l\u2019Associatif Azur\u00e9en, organisera cette ann\u00e9e, en collaboration avec L\u2019Ordre Associatif Mon\u00e9gasque, la 4\u00e8me NUIT DES ASSOCIATIONS, \u00e9dition C\u00f4te d\u2019Azur, le Samedi 12 Novembre 2016 au Palais de la M\u00e9diterran\u00e9e. Ce d\u00eener de gala, dont les b\u00e9n\u00e9fices seront redistribu\u00e9s aux associations azur\u00e9ennes, sera l\u2019occasion d\u2019honorer plusieurs b\u00e9n\u00e9voles, qui se verront remettre les m\u00e9dailles de l\u2019Ordre Associatif Mon\u00e9gasque, afin de r\u00e9compenser leur engagement. Lors de l\u2019\u00e9v\u00e9nement, le troph\u00e9e \u00ab Les Anges du Rocher \u00bb, oscar du secteur associatif, sera remis \u00e0 une association azur\u00e9enne, particuli\u00e8rement m\u00e9ritante, s\u00e9lectionn\u00e9e par notre comit\u00e9.</p>\n' +
+				'		<p><a href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">Lire la suite <span class="meta-nav"></span></a></p>\n' +
+				'		<p>Cet article <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a> est apparu en premier sur <a rel="nofollow" href="http://www.clubbusiness06.com">CLUB BUSINESS 06</a>.</p>\n' +
+				'	]]></description>\n' +
+				'	<dc:creator><![CDATA[Emmanuel GAULIN]]></dc:creator>\n' +
+				'	<category><![CDATA[2. Ev\u00e8nements du Club]]></category>\n' +
+				'</channel>\n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'translate.po',
+			mime: 'text/gettext',
+			content: 
+				'msgid ""\n' +
+				'msgstr ""\n' +
+				'	"Language: en_US\\n"\n' +
+				'	"MIME-Version: 1.0\\n"\n' +
+				'	"Content-Type: text/plain; charset=UTF-8\\n"\n' +
+				'	"Content-Transfer-Encoding: 8bit\\n"\n' +
+				'\n' +
+				'# comment\n' +
+				'msgctxt "license"\n' +
+				'msgid "License"\n' +
+				'msgstr "License"\n' +
+				'\n' +
+				'msgctxt "5_days_left"\n' +
+				'msgid "1 day"\n' +
+				'msgid_plural "%d day\\"newbie\\""\n' +
+				'msgstr[0] "1 day"\n' +
+				'msgstr[1] "%d days"\n' +
+				''
+		}),
+		new DocumentModel({
+			title: 'data.json',
+			mime: 'application/json',
+			content: 
+				'{"abc":"13","xyz":{"field1":"value1"}}\n' +
+				'{"abc":"13","xyz":{"field1":"value1"}}\n' +
+				'{"abc":"13","xyz":{"field1":"value1"}}' +
+				''
+		}),
+		new DocumentModel({
+			title: 'test.md',
+			mime: 'text/markdown',
+			content: 
+				'testtext\n' +
+				'[emptylink]()\n' +
+				'\n'+
+				'[yandex](http://yandex.ru)\n' +
+				'\n' +
+				'# ng Bookdddstay\n' +
+				'Stay on page 167\n' +
+				'\n' +
+				'text1  \n' +
+				'text2  \n' +
+				'text3\n' +
+				'\n' +
+				'\n' +
+				'\n' +
+				'\ttext\n' +
+				' \n' +
+				'sss \n' +
+				'\n' +
+				'\n' +
+				'# Helee\n' +
+				'## loff\n' +
+				'edwedwed\n' +
+				'## sub title3\n' +
+				'abcdefgh\n' +  
+				'abcdefgh\n' +  
+				'### edwedwedwe\n' +
+				'\n' +
+				'Example of command `ss	`fwewfw`sdd`dd`wdedwe` `` `--wswsed-`\n' +
+				'---\n' +
+				'\n' +
+				'#### 1233\n' +
+				'Example  \n' +
+				'\n' +
+				'```html\n' +
+				'<!DOCTYPE html>\n' +
+				'<html>\n' +
+				'	<head>\n' +
+				'		<meta charset="utf-8"/>\n' +
+				'	</head>\n' +
+				'	<body>\n' +
+				'		<h2>Hello world!</h2>\n' +
+				'	</body>\n' +
+				'</html>\n' +
+				'```\n' +
+				'd ddwd\n' +
+				'``` python\n' +
+				'Code listening:\n' +
+				'```\n' +
+				'\n' +
+				'```\n' +
+				'edewd\n' +
+				'```\n' +
+				'\n' +
+				'Text\n' +
+				'**edwe\n' +
+				'dw**\n' +
+				'- abc;\n' +
+				'- xyz;\n' +
+				'- qwerty;\n' +
+				'- 123. \n' + // this cose troubles
+				'\n\n' +
+				'1.	aaa;\n' +
+				'2.	bbb;\n' +
+				'3.	bbb;\n' +
+				'4.	bbb;\n' +
+				'\n\n' +
+				'- abc;\n' +
+				'- xyz;\n' +
+				'	-	 qqq;\n' +
+				'- qwerty;\n' +
+				'\n' +
+				'*11*\n' +
+				'**22**\n' +
+				'***33***\n' +
+				'****44****\n' +
+				'\n' +
+				'another test text\n' +
+				''				
+		}),
+		new DocumentModel({
+			title: 'blocks.js',
+			mime: 'application/javascript',
+			content: 
+				'while(false){\n' +
+				'	1;\n' +
+				'}\n' +
+				'{if(true){\n' +
+				'\t11;\n' +
+				'}\n' +
+				'(function(){\n' +
+				'\t1;\n' +
+				'}())\n' +
+				'}\n'
+		})
+	]);
+	return projectModel;
+});
+//================================================================================
+// Default project
+//================================================================================
+;DPROVIDER.define('defaultProject', ['DocumentModel', 'ProjectModel'], function(DocumentModel, ProjectModel){
+	var projectModel = new ProjectModel({
+		title: 'default',
+		grid_id: '7', // схема раскладки
+		opened_ids: Array(4), // открытые документы
+		current_doc: '0', // id of current focused doc
+		docs: {},
+	});
+	projectModel.add([
+		new DocumentModel({
+			title: 'index.html', // todo rename `fname` -> `title`
+			mime: 'text/html',
+			content: 
+				'<!DOCTYPE html>\n' +
+				'<html>\n' +
+				'	<head>\n' +
+				'		<meta charset="utf-8">\n' +
+				'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
+				'	</head>\n' +
+				'	<body>\n' +
+				'		<h1>Hello world!</h1>\n' +
+				'		<script src="./script.js"></script>\n' +
+				'	</body>\n' +
+				'</html>\n'
+		}),
+		new DocumentModel({
+			title: 'style.css',
+			mime: 'text/css',
+			content: 
+				'html{ font: 13px/18px Arial; }	\n' +
+				'body{ margin: 0; }\n' +
+				'button, input{ font-family: inherit; }\n' +
+				'table{ border-collapse: collapse; }\n'
+		}),
+		new DocumentModel({
+			title: 'script.js',
+			mime: 'application/javascript',
+			content: ''
+		}),
+		new DocumentModel({
+			title: 'readme.txt',
+			mime: 'text/plain',
+			content: ''
+		}),
+	]);
+	return projectModel;
+});
 
 ;DPROVIDER.define(['MainView', 'DocumentModel', 'ProjectModel', 'Configs'], function main(MainView, DocumentModel, ProjectModel, Configs){
 	function parseQuery(query){
@@ -1133,246 +1526,14 @@
 		if(document.readyState == 'complete'){
 			// Create default 
 			App.controls.loadDefaultProject.onclick = function(){
-				App.model && App.model.destroy(); // Trigger destroy event
+				if(App.model) App.model.destroy(); // Trigger destroy event
 
-				var projectModel = new ProjectModel({
-					title: 'default',
-					grid_id: '7', // схема раскладки
-					opened_ids: Array(4), // открытые документы
-					current_doc: '0', // id of current focused doc
-					docs: {},
-				});
-				projectModel.add([
-					new DocumentModel({
-						title: 'index.html', // todo rename `fname` -> `title`
-						mime: 'text/html',
-						content: 
-							'<!DOCTYPE html>\n' +
-							'<html>\n' +
-							'	<head>\n' +
-							'		<meta charset="utf-8">\n' +
-							'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
-							'	</head>\n' +
-							'	<body>\n' +
-							'		<h1>Hello world!</h1>\n' +
-							'		<script src="./script.js"></script>\n' +
-							'	</body>\n' +
-							'</html>\n'
-					}),
-					new DocumentModel({
-						title: 'style.css',
-						mime: 'text/css',
-						content: 
-							'html{ font: 13px/18px Arial; }	\n' +
-							'body{ margin: 0; }\n' +
-							'button, input{ font-family: inherit; }\n' +
-							'table{ border-collapse: collapse; }\n'
-					}),
-					new DocumentModel({
-						title: 'script.js',
-						mime: 'application/javascript',
-						content: ''
-					}),
-					new DocumentModel({
-						title: 'readme.txt',
-						mime: 'text/plain',
-						content: ''
-					}),
-				]);
-				App.initProject(projectModel);
+				App.initProject(DPROVIDER.require('defaultProject'));
 			};
 			App.controls.loadTestProject.onclick = function(){
-				App.model && App.model.destroy(); // Trigger destroy event
-				
-				// ATTENTION: documentId must be a string!
-				var projectModel = new ProjectModel({
-					title: 'dev',
-					grid_id: '4', // схема раскладки
-					opened_ids: ['0', '1', null, '3'], // открытые документы
-					current_doc: '0', // id of current focused doc
-					docs: {},
-				});
-				projectModel.add([
-					new DocumentModel({
-						title: 'index.html',
-						mime: 'text/html',
-						content:
-							'<!DOCTYPE html>\n' +
-							'<html>\n' +
-							'	<head>\n' +
-							'		<meta charset="utf-8">\n' +
-							'		<link rel="stylesheet" type="text/css" href="./style.css"/>\n' +
-							'	</head>\n' +
-							'	<body>\n' +
-							'		<h1 style="">Hello world!</h1>\n' +
-							'		<script src="./script.js"></script>\n' +
-							'	</body>\n' +
-							'</html>\n'
-					}),
-					new DocumentModel({
-						title: 'style.css',
-						mime: 'text/css',
-						content: 
-							':root{\n' +
-							'	color: #cccccc;\n' +
-							'}\n' +
-							'html{ font: 13px/18px Arial; }	\n' +
-							'body{ margin: 0; }\n' +
-							'button, input{ font-family: inherit; }\n' +
-							'table{ border-collapse: collapse; }\n' +
-							'#id32:not(.abc){ \n' +
-							'	width: calc(var(--abc) + 32px); \n' +
-							'	margin: -1.31em; /* .25x desired size */ \n' +
-							'	height: 5.24em;  /* 2x desired size */ \n' +
-							'	width: 5.24em;   /* 2x desired size */ \n' +
-							'	transform: scale(.5); \n' +
-							'} \n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'script.js',
-						mime: 'application/javascript',
-						content: 
-							'// single line comment\n' +
-							'var lines = selectedText.split(\'\\n\').map(str => str.charCodeAt(0) == 9 ? str.substring(1) : str);\n' +
-							'/* Double quoteas comment */ var str = "abc";/* multi\n' +
-							'	line\n' +
-							'comment	*/\n' +
-							'var str = \'abc\';\n' +
-							'var str = \'ab\\\n' +
-							'c\';\n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'readme.txt',
-						mime: 'text/plain',
-						content: 'qwerty\nasdfghjkl\nzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnmzxcvbnm\n1234567890123456789012345678901234567890123456789012345678901234567890\n1234567890\n1234567890\n1234567890\n1234567890\n'
-					}),
-					new DocumentModel({
-						title: 'test.xml',
-						mime: 'text/xml',
-						content: 
-	 						'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"	xmlns:content="http://purl.org/rss/1.0/modules/content/"\n' +
-							'	xmlns:wfw="http://wellformedweb.org/CommentAPI/"\n' +
-							'	xmlns:dc="http://purl.org/dc/elements/1.1/"\n' +
-							'	xmlns:atom="http://www.w3.org/2005/Atom"\n' +
-							'	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"\n' +
-							'	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"\n' +
-							'>\n' +
-							'<channel>\n' +
-							'	<title>Internship &#8211; French Tech Côte d&#039;Azur</title>\n' +
-							'	<atom:link href="http://www.clubbusiness06.com/feed/" rel="self" type="application/rss+xml" />\n' +
-							'	<description><![CDATA[<p>Vu sur <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a></p>\n' +
-							'		<p style="font-size:14px; color:#666666; text-align:justify; font-family:Arial, Helvetica, sans-serif;font-weight:bold;">L\u2019engagement associatif est plus que jamais au c\u0153ur de nos pr\u00e9occupations. L\u2019Associatif Azur\u00e9en et ses partenaires s\u2019efforcent tous les ans de mettre en lumi\u00e8re les associations azur\u00e9ennes, leurs initiatives et leur \u0153uvre. <br />\n' +
-							'		Pour atteindre cet objectif, l\u2019Associatif Azur\u00e9en, organisera cette ann\u00e9e, en collaboration avec L\u2019Ordre Associatif Mon\u00e9gasque, la 4\u00e8me NUIT DES ASSOCIATIONS, \u00e9dition C\u00f4te d\u2019Azur, le Samedi 12 Novembre 2016 au Palais de la M\u00e9diterran\u00e9e. Ce d\u00eener de gala, dont les b\u00e9n\u00e9fices seront redistribu\u00e9s aux associations azur\u00e9ennes, sera l\u2019occasion d\u2019honorer plusieurs b\u00e9n\u00e9voles, qui se verront remettre les m\u00e9dailles de l\u2019Ordre Associatif Mon\u00e9gasque, afin de r\u00e9compenser leur engagement. Lors de l\u2019\u00e9v\u00e9nement, le troph\u00e9e \u00ab Les Anges du Rocher \u00bb, oscar du secteur associatif, sera remis \u00e0 une association azur\u00e9enne, particuli\u00e8rement m\u00e9ritante, s\u00e9lectionn\u00e9e par notre comit\u00e9.</p>\n' +
-							'		<p><a href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">Lire la suite <span class="meta-nav"></span></a></p>\n' +
-							'		<p>Cet article <a rel="nofollow" href="http://www.clubbusiness06.com/nuit-des-associations-nice-121116/">La Nuit des Associations, samedi 12 novembre 2016 \u00e0 Nice</a> est apparu en premier sur <a rel="nofollow" href="http://www.clubbusiness06.com">CLUB BUSINESS 06</a>.</p>\n' +
-							'	]]></description>\n' +
-							'	<dc:creator><![CDATA[Emmanuel GAULIN]]></dc:creator>\n' +
-							'	<category><![CDATA[2. Ev\u00e8nements du Club]]></category>\n' +
-							'</channel>\n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'translate.po',
-						mime: 'text/gettext',
-						content: 
-							'msgid ""\n' +
-							'msgstr ""\n' +
-							'	"Language: en_US\\n"\n' +
-							'	"MIME-Version: 1.0\\n"\n' +
-							'	"Content-Type: text/plain; charset=UTF-8\\n"\n' +
-							'	"Content-Transfer-Encoding: 8bit\\n"\n' +
-							'\n' +
-							'# comment\n' +
-							'msgctxt "license"\n' +
-							'msgid "License"\n' +
-							'msgstr "License"\n' +
-							'\n' +
-							'msgctxt "5_days_left"\n' +
-							'msgid "1 day"\n' +
-							'msgid_plural "%d day\\"newbie\\""\n' +
-							'msgstr[0] "1 day"\n' +
-							'msgstr[1] "%d days"\n' +
-							''
-					}),
-					new DocumentModel({
-						title: 'data.json',
-						mime: 'application/json',
-						content: 
-							'{"abc":"13","xyz":{"field1":"value1"}}\n' +
-							'{"abc":"13","xyz":{"field1":"value1"}}\n' +
-							'{"abc":"13","xyz":{"field1":"value1"}}' +
-							''
-					}),
-					new DocumentModel({
-						title: 'test.md',
-						mime: 'text/markdown',
-						content: 
-							'testtext\n' +
-							'[emptylink]()\n' +
-							'\n'+
-							'[yandex](http://yandex.ru)\n' +
-							'\n' +
-							'# ng Bookdddstay\n' +
-							'Stay on page 167\n' +
-							'\n' +
-							'text1  \n' +
-							'text2  \n' +
-							'text3\n' +
-							'\n' +
-							'\n' +
-							'\n' +
-							'\ttext\n' +
-							' \n' +
-							'sss \n' +
-							'\n' +
-							'\n' +
-							'# Helee\n' +
-							'## loff\n' +
-							'edwedwed\n' +
-							'## sub title3\n' +
-							'abcdefgh\n' +  
-							'abcdefgh\n' +  
-							'### edwedwedwe\n' +
-							'\n' +
-							'Example of command `ss	`fwewfw`sdd`dd`wdedwe` `` `--wswsed-`\n' +
-							'---\n' +
-							'\n' +
-							'#### 1233\n' +
-							'Example  \n' +
-							'\n' +
-							'```html\n' +
-							'<!DOCTYPE html>\n' +
-							'<html>\n' +
-							'	<head>\n' +
-							'		<meta charset="utf-8"/>\n' +
-							'	</head>\n' +
-							'	<body>\n' +
-							'		<h2>Hello world!</h2>\n' +
-							'	</body>\n' +
-							'</html>\n' +
-							'```\n' +
-							'd ddwd\n' +
-							'``` python\n' +
-							'Code listening:\n' +
-							'```\n' +
-							'\n' +
-							'```\n' +
-							'edewd\n' +
-							'```\n' +
-							'\n' +
-							'Text\n' +
-							'**edwe\n' +
-							'dw**\n' +
-							'- abc;\n' +
-							'- xyz;\n' +
-							'- qwerty;\n' +
-							'- 123. \n' +
-							''
-					})
-				]);
-				App.initProject(projectModel);
+				if(App.model) App.model.destroy(); // Trigger destroy event
+
+				App.initProject(DPROVIDER.require('testProject'));
 			};
 		}
 	}

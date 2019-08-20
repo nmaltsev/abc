@@ -35,6 +35,7 @@
 						<option value="theme-a">Dark B</option>
 						<option value="theme-c">Dark C</option>
 						<option value="theme-d">Dark D</option>
+						<option value="theme-e">Dark E</option>
 					</select>
 
 					<div class="sc_toppanel_menu-label" data-co="toppanel-menu-label">
@@ -58,14 +59,14 @@
 			<div class="sc_layout-mid">
 				<div class="sc_layout-tools" data-co="tools">
 					<button class="tool-btn" data-co="tools-add-btn"><svg class="svg-btn-container"><use xlink:href="#svg-add"></use></svg></button>
-					<button class="tool-btn" data-co="last-projects-btn">S</button>
+					<button class="tool-btn" data-co="last-projects-btn">P</button>
 					<button class="tool-btn" data-co="toggle-list-btn">&lt;</button>
+					<button class="tool-btn" data-co="settings-btn">S</button>
 				</div>
-				<div class="sc_layout-left">
-					<div class="sc_documents-list" data-co="items"></div>
-					<!-- TODO: -->
-					<div class="sc_projects-list" data-co="projects" style="display:none;">TODO</div>
-				</div>
+				<div class="sc_layout-left"><!--
+					--><div class="sc_documents-list" data-co="items"></div><!--
+					--><div class="sc_projects-list" data-co="projects" style="display:none;">TODO</div><!--
+				--></div>
 				<div class="sc_layout-right grid_column" data-co="grid">
 					<div class="grid_row grid_cell" data-co="half1">
 						<div class="grid_cell" data-co="space1"></div>
@@ -83,6 +84,7 @@
 <script src="lib/$4_clean.js"></script>
 <script src="lib/polyfills.js"></script>
 <script src="lib/dprovider.js"></script>
+<script src="lib/marked.min.js"></script>
 <script src="lib/cr.js"></script>
 <script src="lib/backside.js"></script>
 <script src="lib/xhr.js"></script>

@@ -21,10 +21,17 @@ function DProvider(){
 	this.cache = {};
 }
 DProvider.prototype = {
+	define: function(arg1, arg2, arg3){
+		if(typeof(arg1) == 'string'){
+			this._define(arg1, arg2, arg3);
+		}else{
+			this._define(arg3, arg1, arg2);
+		}
+	},
 	// @param {String} name
 	// @param {Array} dependencies
 	// @param {Function}
-	define: function(dependencies, constructor, name){
+	_define: function(name, dependencies, constructor){
 		this.stack[name || constructor.name] = constructor;
 		
 		if(Array.isArray(dependencies)){

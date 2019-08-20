@@ -29,10 +29,17 @@
 	return SHighlighter;
 });
 ;DPROVIDER.define(null, function HighlighterSets(){
+	function span(className, value){
+		return '<span class="' + className + '">' + value + '</span>';
+	}
+
 	return {
 		js: {
 			PATTERN: new RegExp(
-				"(//.*(?=[\\n]|$))|" + // single line comment
+				''
+				+ '(\\%b\\d+b\\%)' // @codeBlock
+				+ '|'
+				+ "(//.*(?=[\\n]|$))|" + // single line comment
 				'(\\/\\*[\\s\\S]*?($|\\*\\/))|' + // multiline comment
 				// '((?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")|(?:\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'))|' + // single or double quote strings
 				// Attention: `.?` skip '\n' so it fix by (*)
@@ -42,15 +49,27 @@
 					'(?:\\/[^\\s]+(?!\\\\)\\/)[img]{0,3}(?!\\d)(?=\\s*[\\;,\\x5d\\x29\\x2e\\n]?)' +
 				')|' +		
 				// '(?:(?=function\\s*)([\\w\\d\\-\\_\\$]+)(?=\\s*\\())|' + // function name
-				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()|' + // function name
-	            "(\\b(?:break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|true|false|typeof|throw|Infinity|import|export|from|constructor|super|class|this)\\b)|" + // keywords
-				"(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null)\\b)|" + // numbers
+				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()' + // function name
+				// Attention `constructor` is not keyword
+	            "|(\\b(?:break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|true|false|typeof|throw|Infinity|import|export|from|super|class|extends|this)\\b)" + // @keywords
+				"|(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null)\\b)|" + // numbers
 				//"(?:\\.([@\\w]+)(?=[(]))|" + // method chaining
 				//"(?:\\b([@\\w]+)(?=[(]))", // function execution
-	            "(?:([@\\w]+)(?=[(]))", // function execution
+	            "(?:([@\\w]+)(?=[(]))" // function execution
+	            + '|(\{|\})' // @figBrackets
+	            , 
 			'g'),
-			transformer: function(subStr, p1, p2, p2end, str1, str2, reg, funcDef, funcSplit, funcName, funcBrack, keywords, p6, method, funcExc){
-				if(p1 != undefined){
+			transformer: function(subStr, codeBlock,p1, p2, p2end, str1, str2, reg, funcDef, funcSplit, funcName, funcBrack, keywords, p6, method, /*funcExc, */figBrackets){
+				if(codeBlock != undefined){
+					// DOM content must contains code block identificator and be the same size as relative model item
+					
+					return '<i class="sh-codeblock" data-id="' + codeBlock.substr(2, codeBlock.length - 4) + '"><span class="sh-codeblock_inner" contenteditable="false">' + codeBlock + '</span></i>';
+					
+					
+					// return '<i class="sh-codeblock2" data-id="' + codeBlock.substr(2, codeBlock.length - 4) + '"><span class="sh-codeblock_inner2">' + codeBlock + '</span>' + '<i class="sh-codeblock_inner3">{...}</i>' + '</i>';
+					// return '<i class="sh-codeblock2" data-id="' + codeBlock.substr(2, codeBlock.length - 4) + '"><span class="sh-codeblock_inner2">' + codeBlock + '</span>' + '</i>';
+					
+				}else if(p1 != undefined){
 					return '<span class="sh_js_comment">' + subStr + '</span>';
 				}else if(p2 != undefined){
 					return '<span class="sh_js_comment sh_multiline">' + subStr.replace(/\n/g, '</span>\n<span class="sh_js_comment sh_multiline">') + '</span>';
@@ -95,6 +114,8 @@
 				}*/
 	            else if(method != undefined){
 					return '<span class="sh_js_method">' + method + '</span>';
+				}else if(figBrackets){
+					return span('sh-js_brackets', figBrackets);
 				}
 			},
 			commOpen: '//',
@@ -192,12 +213,12 @@
 		},
 
 		// TODO
-		// ***\n - horizontal line (<hr/>)
+		// ***\n - horizontal line (<hr/>) \n****\n
 
 	    markdown: {
 	        // PATTERN: /\[([^\]]*)\]\(([^\)]*)\)|(\#+)(.+\n)|```([\s\S]*?)```|`(.*?)`|\*\*([\s\S]*?)\*\*/ig,
-	        PATTERN: /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|```(.+)?\n([\s\S]*?)```|`(.*?)`|\*\*([\s\S]*?)\*\*/ig,
-	        transformer: function(substr, hyp_text, hyp_link, title_type, title_text, code_type, code, code_line, multiline_text, list_items){
+	        PATTERN: /\[([^\]]*)\]\(([^\)]*)\)|(\#+\s+)(.+)\n|```(.+)?\n([\s\S]*?)```|`(.*?)`|(\*+)([^*\n]+)(\*+)/ig, 
+	        transformer: function($sub_s, hyp_text, hyp_link, title_type, title_text, code_type, code, code_line, multiline_text_open, multiline_text, multiline_text_close, $pos){
 	            if(hyp_text != null){
 	                return '<span class="sh_markdown_hyptext">[' + hyp_text + ']</span>' + '<span class="sh_markdown_hyplink">(' + (hyp_link || '') + ')</span>';
 	            }else if(title_type){
@@ -207,9 +228,17 @@
 	            }else if(typeof(code_line) == 'string'){ // fix empty string
 	                return '<i class="sh_markdown_code">`' + code_line + '`</i>';
 	            }else if(code != null){
-	                return '<pre class="sh_markdown_multiline-code">```' + (code_type ? '<span class="sh_markdown_code-type">' + code_type + '</span>' : '')+'\n' + code + '```</pre>';
-	            }else if(multiline_text){
-	                return '<pre class="sh_markdown_text">**' + multiline_text + '**</pre>';
+	                return '<pre class="sh_markdown_multiline-code">```' + (code_type ? '<span class="sh_markdown_code-type">' + code_type + '</span>' : '') + '\n' + code + '```</pre>';
+	            } else if(multiline_text) {
+	            	let minLength_n = Math.min(multiline_text_open.length, multiline_text_close.length);
+	            	let em_n = minLength_n % 2,
+	            		strong_n = minLength_n >> 1,
+						start_s = '*'.repeat(multiline_text_open.lengh - minLength_n) + '<em>'.repeat(em_n) + '<strong>'.repeat(strong_n),
+	            		end_s = '</strong>'.repeat(strong_n) + '</em>'.repeat(em_n) + '*'.repeat(multiline_text_close.lengh - minLength_n);
+
+	                return start_s + multiline_text_open + multiline_text + multiline_text_close + end_s;
+	            } else {
+	            	return $sub_s;
 	            }
 	        },
 	    }

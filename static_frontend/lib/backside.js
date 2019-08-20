@@ -1,4 +1,4 @@
-/* Backside  v18 2017/05/26 (based on v18 2017/07/21 2016/12/19, 2016/08/15) */
+/* Backside  v20 2018/02/15 */
 ;(function(_env){
 // Need polifils for NodeElement:remove ($4.removeNode(this.el);)
 //==================================
@@ -108,7 +108,7 @@
 {
 	var Model = function(attr){
 		Events.call(this);
-		this.attr = attr || Object.create(null);
+		this.attr = attr || {}; // required hasOwnProperty() method
 	}
 	Model.prototype = Object.create(Events.prototype);
 	Model.prototype.constructor = Events;
@@ -147,7 +147,7 @@
 		this.trigger('change', this);
 	};
 	Model.prototype.get = function(key, _default){
-		return this.attr[key] || _default;
+		return this.attr.hasOwnProperty(key) ? this.attr[key] : _default;
 	};
 	Model.prototype.has = function(key){
 		return this.attr.hasOwnProperty(key);
@@ -529,7 +529,7 @@
                 eventName = key;
                 control = this.el;
             }
-            
+
             if(control){
                 control[eventName] = events[key].bind(this);
                 _cache.push(control, eventName);
