@@ -1,17 +1,11 @@
-/*Compiled 2019-08-20:23:48:26*/
+/*Compiled 2019-10-13:12:58:17*/
+/* Normalize styles*/
 html{ height: 100%; font: 13px/15px Arial; }
 body{ margin: 0;height: 100%; }
-button, input, input, select{
-	font-family: inherit; 
-	border-radius: 0;
-}
-button, input{}
+button, input, input, select{font-family: inherit;border-radius: 0;}
 table{ border-collapse: collapse; }
-input, select{
-	font-size: inherit;
-	line-height: inherit;
-	font: inherit;
-}
+input, select{font-size: inherit;line-height: inherit;font: inherit;}
+dialog{border:none;padding:0;}
 body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 
 /* BASE STYLES */
@@ -613,7 +607,7 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
     line-height: 20px;	
     outline: none;
     padding: 5px 20px 5px 30px;
-    margin: 0 16px 0 0;
+    margin: 0 8px;
 }
 .sc_toppanel_project-name:focus{
 	background-color: #ebebeb;
@@ -773,7 +767,7 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 
 }
 .control-list-item_control {
-	margin-right: 12px;
+	margin-left: 12px;
 }
 .control-list-item_label {
 
@@ -786,6 +780,7 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 .dwc_btn:disabled:active { background-color: #fff; }
 .dwc_btn.dwc_btn-default { font-weight: bold; }
 */
+
 
 .dwc_btn{
 	display: inline-block;

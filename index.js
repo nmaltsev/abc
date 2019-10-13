@@ -1,4 +1,4 @@
-/*Compiled 2019-08-20:23:48:26*/
+/*Compiled 2019-10-13:12:58:17*/
 ﻿/* 
 $4 v15 2016/07/29
 DOM manipulation library
@@ -617,7 +617,13 @@ if(!('remove' in Element.prototype)){
 		}
 		
 		return out;
-	}
+	};
+	// @param {String:function} handlers_o
+	Model.prototype.listen = function(handlers_o){
+		for (key_s in handlers_o) {
+			this.on(key_s, handlers_o[key_s]);
+		}
+	};
 }
 //==================================
 // DeepModel
@@ -938,10 +944,12 @@ if(!('remove' in Element.prototype)){
 			}
 		}
 	};
+	// TODO ANTIPATTERN
 	// @memberOf View - add model listener
 	// @param {String} property - model field
 	// @param {Function} callback 
 	View.prototype.listen = function(property, callback){
+		console.warn('View::listen used. TODO antipattern `%s`', property);
 		var cb = callback.bind(this);
 		if(this.model) this.model.on(property, cb);
 		return cb
@@ -1285,7 +1293,7 @@ function each(collection, callback){
 		if(conf.el){
 			this.el = conf.el;
 		}else{
-			this.el = document.createElement(conf.tagName || 'div');
+			this.el = document.createElement(conf.tagName || 'dialog');
 			this.el.className = this.className + (conf.className ? ' ' + conf.className : '');
 		}
 
@@ -1356,16 +1364,25 @@ function each(collection, callback){
 		this.onOpen(this);
 		document.documentElement.style.overflow = 'hidden';
 		document.body.overflow = 'hidden';
-		this.el.style.display = '';
+
+		if (this.el.tagName === 'dialog') {
+			this.el.setAttribute('open', true);
+		} else {
+			this.el.style.display = '';	
+		}
 		this.stack.push(this);
 	};
 	// if onClose return true close would be canceled
 	BasePopupView.prototype.close = function(status){
 		this.onClose(this, status) || this._completeClose();
-		
 	};
 	BasePopupView.prototype._completeClose = function(){
-		this.el.style.display = 'none';
+		if (this.el.tagName === 'dialog') {
+			this.el.removeAttribute('open');
+		} else {
+			this.el.style.display = 'none';
+		}
+		
 		document.documentElement.style.overflow = '';
 		document.body.overflow = '';
 		this.destroyOnClose && this.remove();
@@ -1392,9 +1409,9 @@ function each(collection, callback){
 // @param {String} conf.className
 var PopupBuilder = function(conf, extend){
 	if(extend != null) Object.assign(this, extend);
-	this.el = document.createElement('div');
+	this.el = document.createElement('dialog');
 	this.el.className = conf.className;
-	this.el.style.display = 'none';
+	// this.el.style.display = 'none';
 	this.el.setAttribute('tabindex', 0);
 	this.initialize(conf);
 }
@@ -1455,7 +1472,7 @@ PopupBuilder.prototype.initialize = function(conf){
 PopupBuilder.prototype.render = function(conf){
 	this.controls = {};
 	this.el.innerHTML = this.template.replace('%title%', conf.title || '').replace('%content%', conf.content || '');
-	this._bindByRole();
+	this._bindByRole(this.el);
 	if(conf.events) this._bindEvents(conf.events);
 };
 PopupBuilder.prototype.template = 
@@ -1485,7 +1502,8 @@ PopupBuilder.prototype.open = function(){
 	if(this.onopen) this.onopen(this);
 	document.documentElement.style.overflow = 'hidden';
 	document.body.overflow = 'hidden';
-	this.el.style.display = '';
+	// this.el.style.display = '';
+	this.el.setAttribute('open', true);
 	this.stack.push(this);
 	return this;
 };
@@ -1493,7 +1511,8 @@ PopupBuilder.prototype.close = function(status){
 	this.onclose && this.onclose(this, status) || this._completeClose();
 };
 PopupBuilder.prototype._completeClose = function(){
-	this.el.style.display = 'none';
+	// this.el.style.display = 'none';
+	this.el.removeAttribute('open');
 	document.documentElement.style.overflow = '';
 	document.body.overflow = '';
 	this.destroyOnClose && this.remove();
@@ -2230,20 +2249,20 @@ if(ENV.DPROVIDER){
 				''
 				+ '(\\%b\\d+b\\%)' // @codeBlock
 				+ '|'
-				+ "(//.*(?=[\\n]|$))|" + // single line comment
-				'(\\/\\*[\\s\\S]*?($|\\*\\/))|' + // multiline comment
-				// '((?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")|(?:\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'))|' + // single or double quote strings
+				+ "(//.*(?=[\\n]|$))|" + // a single line comment
+				'(\\/\\*[\\s\\S]*?($|\\*\\/))|' + // a multiline comment
+				// '((?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")|(?:\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'))|' + // a single or double quote strings
 				// Attention: `.?` skip '\n' so it fix by (*)
-				'((?:\"[^\"\\\\]*(?:\\\\.?[^\"\\\\]*)*\")|(?:\'[^\'\\\\]*(?:\\\\.?[^\'\\\\]*)*\'))|' + // single or double quote strings
+				'((?:\"[^\"\\\\]*(?:\\\\.?[^\"\\\\]*)*\")|(?:\'[^\'\\\\]*(?:\\\\.?[^\'\\\\]*)*\'))|' + // a single or double quote strings
 				'(`[\\s\\S]+?`)|' + // multiline js strings
-				'(' + // regular expression literal 
+				'(' + // a regular expression literal 
 					'(?:\\/[^\\s]+(?!\\\\)\\/)[img]{0,3}(?!\\d)(?=\\s*[\\;,\\x5d\\x29\\x2e\\n]?)' +
 				')|' +		
-				// '(?:(?=function\\s*)([\\w\\d\\-\\_\\$]+)(?=\\s*\\())|' + // function name
-				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()' + // function name
+				// '(?:(?=function\\s*)([\\w\\d\\-\\_\\$]+)(?=\\s*\\())|' + // a function name
+				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()' + // a function name
 				// Attention `constructor` is not keyword
-	            "|(\\b(?:break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|true|false|typeof|throw|Infinity|import|export|from|super|class|extends|this)\\b)" + // @keywords
-				"|(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null)\\b)|" + // numbers
+	            "|(\\b(?:async|yield|await|try|catch|break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|typeof|instanceof|throw|import|export|from|super|class|extends|this|delete|default)\\b)" + // @keywords
+				"|(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null|Infinity|NaN|true|false)\\b)|" + // a number 
 				//"(?:\\.([@\\w]+)(?=[(]))|" + // method chaining
 				//"(?:\\b([@\\w]+)(?=[(]))", // function execution
 	            "(?:([@\\w]+)(?=[(]))" // function execution
@@ -3097,6 +3116,10 @@ if(ENV.DPROVIDER){
 		this.controls.frame.onload = function(e){
 			this.updateContent(e.target.contentDocument, this.model.getSource());
 		}.bind(this);
+		this.controls.frame.onerror = function(e){
+			console.log('Frame error');
+			console.dir(e);
+		};
 	};
 	JsConsole.prototype.refresh = function(){ // send reference on application
 		var 	source = this.model.getSource();
@@ -3106,9 +3129,10 @@ if(ENV.DPROVIDER){
 	};
 	JsConsole.prototype.updateContent = function(doc, source){
 		doc.open()
-		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}</style>');
+		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:0 0 0 10px;}.message-error{background:#ffddcf;}</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
-		doc.write('<script>' + source + '</script>');
+		// The try block can catch ReferenceError
+		doc.write('<script>try{' + source + '}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
 		doc.close();
 	};
 	JsConsole.prototype.injectCode =
@@ -3167,6 +3191,25 @@ if(ENV.DPROVIDER){
 		}
 	};
 	E._console = _console;
+
+	function object2string(o) {
+		let s = '<div class="object-container"><b>{</b>';
+		let descriptors = Object.getOwnPropertyDescriptors(o);
+		let value;
+		
+		for (let property in descriptors) {
+			value = descriptors[property].value;
+			if (typeof(value) == 'object') {
+				s += '<p>' + escape(property) + ':</p>';
+				s += object2string(value);
+			} else {
+				s += '<p>' + escape(property) + ': ' + (typeof(value) == 'string' ? '"' + escape(value.toString()) + '"' : escape(value.toString())) + '</p>';
+			}
+			
+		}
+		s += '<b>}</b></div>';
+		return s;
+	}
 	
 	E.console = {
 		log: function(){
@@ -3184,16 +3227,21 @@ if(ENV.DPROVIDER){
 			document.write('<p>' + s.replace(/\\n/g, '<br/>&#8203;') + '</p>');
 		},
 		dir: function(o){
-			document.write('<pre>' + JSON.stringify(o, null, '\\t') + '</pre>');
+			// document.write('<pre>' + JSON.stringify(o, null, '\\t') + '</pre>');
+			document.write(object2string(o));
 		},
 		clear: function(){
 			document.body.innerHTML = '';
+		},
+		_reportError: function(message){
+			document.write('<p class="message-error">' + escape(message).replace(/\\n/g, '<br/>&#8203;') + '</p>');
 		}
 	};
 	E.onerror = function(e, s, line, position, error){
-		console.log(escape(error.stack).replace(/\\n/g, '<br/>'));
-		// _console.log('Catch error');
-		// _console.dir(arguments);
+		// console.log(escape(error.stack).replace(/\\n/g, '<br/>') + ' ' + line + ':' + position);
+		console._reportError(error.stack + ' ' + line + ':' + position);
+		_console.log('Catch error');
+		_console.dir(arguments);
 		// _console.log(error.stack.replace(/\\n/g, '<br/>'));
 	};
 }(window));`;
@@ -3454,7 +3502,7 @@ if(ENV.DPROVIDER){
 			_counter: this._counter,
 		};
 
-		this.export(['current_doc', 'gridScheme', 'grid_id', 'opened_ids', 'title', 'blocks'], prj.model);
+		this.export(['current_doc', /*'gridScheme', 'gridId',*/ 'opened_ids', 'title', 'blocks'], prj.model);
 
 		for(id in docs){
 			// todo ovveride export() method
@@ -3466,7 +3514,7 @@ if(ENV.DPROVIDER){
 	ProjectModel.createEmpty = function(){
 		return new ProjectModel({
 			title: '',
-			grid_id: '7', // схема раскладки
+			gridId: '7', // схема раскладки
 			opened_ids: Array(4), // открытые документы
 			current_doc: 0, // id of current focused doc
 			docs: {}
@@ -3555,9 +3603,9 @@ if(ENV.DPROVIDER){
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v177 2019/06/03
+	// Editor with syntax highlighting v182 2019/10/12
 	// (C) 2015-2019
-	var VER = 178;
+	var VER = 182;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
@@ -3571,7 +3619,7 @@ if(ENV.DPROVIDER){
 		ok: 'Ok',
 		btn_cancel: 'Cancel',
 		btn_apply: 'Apply',
-		aboutApp: 'About ABC v 0.5a.%d',
+		aboutApp: 'About ABC v 0.6a.%d',
 		unvalid_json_data: 'Unvalid json data',
 		close: 'Close',
 		start_test_prj: 'Start test project',
@@ -3582,8 +3630,10 @@ if(ENV.DPROVIDER){
 		popupRenameDoc_title: 'Rename document \"%s\"',
 		popupRenameDoc_fnamePlaceholder: 'New document name',
 		// settingDialog_title: 'Settings',
-		settingDialog_label_replaceTabBySpace: 'replace tab by spaces',
-		settingDialog_label_tabSize: 'tab size',
+		settingDialog_label_replaceTabBySpace: 'Replace tab by spaces',
+		settingDialog_label_tabSize: 'Tab size',
+		settingDialog_label_grid: 'Grid',
+		settingDialog_label_theme: 'Theme',
 		settingDialog_header_contentSettings: 'Content settings',
 	};
 	var ExtMimeMap = {
@@ -3688,112 +3738,132 @@ if(ENV.DPROVIDER){
 			}
 		};
 	}
+
+	var 	SPACE1 = 0x1,
+			SPACE2 = 0x2,
+			SPACE3 = 0x4,
+			SPACE4 = 0x8,
+			HORIZONTAL = 0x10;
+
 	//==========================================
 	// MainView
 	//==========================================
-	var MainView = Backside.extend(function(conf){
+	var MainView = Backside.extend(function(conf, $getInitState, $saveInitState){
 		this.subView = Object.create(null);
 		this.bus = new Backside.Events();
 		this.listItems = {};
+		this.$getInitState = $getInitState;
+		this.$saveInitState = $saveInitState;
 		Backside.View.call(this, conf);
 	}, Backside.View);
 	MainView.prototype.initialize = function(conf){
 		Backside.View.prototype.initialize.call(this, conf);
 		this._prebindEvents();
-		this.stateModel = new Backside.Model({
-			showProjectList: false,
-			hideListPanel: false,
-		});
+		// To remove
+		// this.stateModel = new Backside.Model({
+		// 	showProjectList: false,
+		// 	hideListPanel: false,
+		// 	gridId: '7',
+		// 	themeId: 'light',
+		// });
+		this.stateModel = new Backside.Model();
 
-		this.stateModel.on('change:showProjectList', function(showProjectList, m){
-			this.controls[showProjectList ? 'projects' : 'items'].style.display = '';
-			this.controls[!showProjectList ? 'projects' : 'items'].style.display = 'none';
-			
-			if(this.controls.items.parentNode.style.display == 'none'){
-				this.stateModel.change('hideListPanel', false);
-			}
-		}.bind(this));
-		this.stateModel.on('change:hideListPanel', function(hideListPanel, m){
-			this.controls.items.parentNode.style.display = hideListPanel ? 'none' : '';
-            this.controls.toggleListBtn.textContent = hideListPanel ? '>' : '<';
-		}.bind(this));
+		this.stateModel.listen({
+			'change:showProjectList': (showProjectList/*, m*/) => {
+				this.controls[showProjectList ? 'projects' : 'items'].style.display = '';
+				this.controls[!showProjectList ? 'projects' : 'items'].style.display = 'none';
+				
+				if(this.controls.items.parentNode.style.display == 'none'){
+					this.stateModel.change('hideListPanel', false);
+				}
+			},
+			'change:hideListPanel': (hideListPanel/*, m*/) => {
+				this.controls.items.parentNode.style.display = hideListPanel ? 'none' : '';
+				this.controls.toggleListBtn.textContent = hideListPanel ? '>' : '<';
+			},
+			// Attention: gridId converting to gridScheme 
+			'change:gridScheme': (code) => {
+				this.controls.space1.style.display = (code & SPACE1) ? '' : 'none';
+				this.controls.space2.style.display = (code & SPACE2) ? '' : 'none';
+				this.controls.space3.style.display = (code & SPACE3) ? '' : 'none';
+				this.controls.space4.style.display = (code & SPACE4) ? '' : 'none';
+
+				if(code & SPACE2 || code & SPACE4){
+					this.controls.half2.style.display = '';
+				}else{
+					this.controls.half2.style.display = 'none';
+				}
+
+				if(code & HORIZONTAL){
+					this.controls.grid.style.flexDirection = 'column';
+					this.controls.half1.style.flexDirection = 'row';
+					this.controls.half2.style.flexDirection = 'row';
+				}else{
+					this.controls.grid.style.flexDirection = 'row';
+					this.controls.half1.style.flexDirection = 'column';
+					this.controls.half2.style.flexDirection = 'column';
+				}
+			},
+			'change:themeId': (themeId) => {
+				var 	className;
+				
+				switch (themeId) {
+					case 'dark': className = 'theme-dark'; break;
+					case 'theme-a': className = 'theme-a'; break;
+					case 'theme-b': className = 'theme-b'; break;
+					case 'theme-c': className = 'theme-c'; break;
+					case 'theme-d': className = 'theme-d'; break;
+					case 'theme-e': className = 'theme-e'; break;
+				}
+	
+				this.controls.grid.className = 'sc_layout-right grid_column ' + className;
+			},
+		})
 	};
 	MainView.prototype.initProject = function(model){
 		this.model = model;
+		// stateModel defines a state of the IDE		
+		this.stateModel.change(Object.assign({ // Merge in default settings
+			showProjectList: false,
+			hideListPanel: false,
+			gridId: '7',
+			gridScheme: 0 | SPACE1,
+			themeId: 'light',
+		}, this.$getInitState && this.$getInitState() || {}));
 
-		// Attention: grid_id converting to grid_scheme 
-		this.listen('change:gridScheme', function(code){
-			this.controls.space1.style.display = (code & SPACE1) ? '' : 'none';
-			this.controls.space2.style.display = (code & SPACE2) ? '' : 'none';
-			this.controls.space3.style.display = (code & SPACE3) ? '' : 'none';
-			this.controls.space4.style.display = (code & SPACE4) ? '' : 'none';
-
-			if(code & SPACE2 || code & SPACE4){
-				this.controls.half2.style.display = '';
-			}else{
-				this.controls.half2.style.display = 'none';
-			}
-
-			if(code & HORIZONTAL){
-				this.controls.grid.style.flexDirection = 'column';
-				this.controls.half1.style.flexDirection = 'row';
-				this.controls.half2.style.flexDirection = 'row';
-			}else{
-				this.controls.grid.style.flexDirection = 'row';
-				this.controls.half1.style.flexDirection = 'column';
-				this.controls.half2.style.flexDirection = 'column';
-			}
-		});
-		this.listen('change:current_doc', function(id){
-			if(id != undefined && this.subView[id]){
-				// console.log('[change:current_doc] %s', id);
-				// console.dir(this.subView[id]);
+		this.model.listen({
+			'change:current_doc': (id) => {
+				if(!this.subView[id]){
+					return;
+				}
 				var editView = this.subView[id];
 
 				this.openTab(id);
-				// Focus if view contains editor 
+				// Focusing an HtmlEditor if a view has an editor 
 				editView.htmlEdit && editView.htmlEdit.el.focus();
-			}
-		});
-		this.listen('change:theme', function(themeId){
-			var 	className = 'sc_layout-right grid_column ';
-			
-			if(themeId == 'dark'){
-				className += 'theme-dark';
-			}else if(themeId == 'theme-a'){ 
-				className += 'theme-a';
-			}else if(themeId == 'theme-b'){ 
-				className += 'theme-b';
-			}else if(themeId == 'theme-c'){ 
-				className += 'theme-c';
-			}else if(themeId == 'theme-d'){ 
-				className += 'theme-d';
-			}else if(themeId == 'theme-e'){ 
-				className += 'theme-e';
-			}
-
-			this.controls.grid.className = className;
-		});
-		this.listen('change:grid_id', function(gridId){
-			this.changeGrid(gridId);
-		});
-		this.listen('change:opened_ids', function(openedIds){
-			// console.log('[CHANGE change:opened_ids %s]', JSON.stringify(openedIds));
-
-			for(var i = 0; i < openedIds.length; i++){
-				openedIds[i] !== null && this.openTab(openedIds[i], 1 << i); // 1<<0 == 1, 1<<1 == 2 
-			}
-		});
-		this.listen('destroy', function(){
-			$4.emptyNode(this.controls.items);
-			var 	id,
-					docs = this.model.get('docs');
-			
-			for(id in docs){
-				docs[id].destroy();
-			}
-			for(id in this.subView){
-				this.subView[id] && this.subView[id].remove();
+			},
+			'change:gridId': (gridId) => {
+				this.changeGrid(gridId);
+			},
+			'change:opened_ids': (openedIds) => {
+				for(var i = 0; i < openedIds.length; i++){
+					openedIds[i] !== null && this.openTab(openedIds[i], 1 << i); // 1<<0 == 1, 1<<1 == 2 
+				}
+			},
+			'destroy': () => {
+				$4.emptyNode(this.controls.items);
+				var 	id,
+						docs = this.model.get('docs');
+				
+				for(id in docs){
+					docs[id].destroy();
+				}
+				for(id in this.subView){
+					this.subView[id] && this.subView[id].remove();
+				}
+			},
+			'add': (documentModel/*, projectModel*/) => {
+				this.appendDocument(documentModel);
 			}
 		});
 		// Attention: Quick and dirty method find next available document by <pre> node at DOM
@@ -3817,10 +3887,6 @@ if(ENV.DPROVIDER){
 				}
 			}
 		}.bind(this));
-		
-		this.listen('add', function(documentModel, projectModel){
-			this.appendDocument(documentModel);
-		});
 
 		var  	docs = this.model.get('docs'),
 			 	openedIds = this.model.get('opened_ids'),
@@ -3831,7 +3897,6 @@ if(ENV.DPROVIDER){
 		}
 		
 		// Apply model data
-		this.changeGrid(this.model.get('grid_id'));
 		this.model.change('opened_ids', openedIds);
 		this._stayFocusOnDoc(this.model.get('current_doc'));
 		this.controls.projectTitle.value = this.model.get('title') || 'noname';
@@ -3992,12 +4057,14 @@ if(ENV.DPROVIDER){
 					'<button class="dwc_btn" type="submit" data-co="submit-btn">' + VOC.create + '</button>' +
 				'</form>',
 				onopen: function(view){
+					// this.el.setAttribute('open', true);
 					view._content = '';
 					setTimeout(function(){
 						this.controls.fname.focus();
 					}.bind(this), 100);
 				},
 				onclose: function(view){
+					// this.el.removeAttribute('open');
 					view._content = null;
 				},
 				popupEvents: {
@@ -4067,12 +4134,12 @@ if(ENV.DPROVIDER){
 		'onclick toggleListBtn': function(){
 			this.stateModel.change('hideListPanel', !this.stateModel.get('hideListPanel'));
 		},
-		'onchange selectGrid': function(e){
-			this.model.change('grid_id', e.target.value);
-		},
 		'onclick settingsBtn': function(e) {
 			console.log('[Click settings]');
 			console.dir(this);
+			var _self = this;
+
+			// todo this.stateModel
 			// TODO May be better to set popup title undefined
 			// TODO get settings from project settings block
 
@@ -4084,44 +4151,131 @@ if(ENV.DPROVIDER){
 					'<h3 class="sc_header2">' + VOC.settingDialog_header_contentSettings +'</h3>' +
 					
 					'<label class="control-list-item sc_article1">' +
+						'<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +	
 						'<input class="control-list-item_control" type="checkbox"/>' +
-						'<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +
 					'</label>' +
 					
 					'<div class="control-list-item sc_article1">' +
-						'<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
 						'<span class="control-list-item_label">' + VOC.settingDialog_label_tabSize + '</span>' +
+						'<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
+					'</div>' +
+					'<div class="control-list-item sc_article1">' +
+						'<span class="sc_toppanel_text">' + VOC.settingDialog_label_grid + '</span>' +
+						'<select data-co="select-grid" class="control-list-item_control sc_project-select">' +
+							'<option value="7" selected>&#9608;</option>' +
+							'<option value="6">&#9473;</option>' +
+							'<option value="5">&#9475;</option>' +
+							'<option value="4">&#9547;</option>' +
+							'<option value="0">&#9507;</option>' +
+							'<option value="1">&#9515;</option>' +
+							'<option value="2">&#9531;</option>' +
+							'<option value="3">&#9523;</option>' +
+						'</select>' +
+					'</div>' +
+					'<div class="control-list-item sc_article1">' +
+						'<span class="sc_toppanel_text">' + VOC.settingDialog_label_theme + '</span>' +
+						'<select data-co="select-theme" class="control-list-item_control sc_project-select">' +
+							'<option value="light">Default</option>' +
+							'<option value="theme-b">Light A</option>' +
+							'<option value="dark">Dark A</option>' +
+							'<option value="theme-a">Dark B</option>' +
+							'<option value="theme-c">Dark C</option>' +
+							'<option value="theme-d">Dark D</option>' +
+							'<option value="theme-e">Dark E</option>' +
+						'</select>' +
 					'</div>' +
 				'',
 				events: {
 					'close click': function(e){
 						e.stopPropagation();
 						this.close();
-					},	
+					},
+					'selectGrid change': function(e){
+						this.model.change('gridId', e.target.value);
+						this.changeGrid(e.target.value);
+					},
+					'selectTheme change': function(e) {
+						var theme = 'light';
+						switch(e.target.value){
+							case 'dark': theme = 'dark'; break;
+							case 'theme-a': theme = 'theme-a'; break;
+							case 'theme-b': theme = 'theme-b'; break;
+							case 'theme-c': theme = 'theme-c'; break;
+							case 'theme-d': theme = 'theme-d'; break;
+							case 'theme-e': theme = 'theme-e'; break;
+						}
+						this.model.change('themeId', theme);
+					},
 				}
 			}, {
+				model: this.stateModel,
 				onopen: function(){
+					console.log('[Setting POPUP open] %s', this.model.get('gridId'));
+					console.dir(JSON.stringify(this.model.attr));
+					console.dir(this);
+					console.dir(this.model.get('gridId'));
 
+					this.controls.selectGrid.value = this.model.get('gridId') || '7';
+					this.controls.selectTheme.value = this.model.get('themeId') || 'light';
 				},
 				onclose: function(){
-
-				}
+					console.log('[Setting POPUP close]');
+					console.dir(JSON.stringify(this.model.attr));
+					_self.$saveInitState(this.model.attr);
+				},
+				// changeGrid() converts gridId to change:gridScheme  
+				changeGrid: function(gridId){
+					var code = 0;
+		
+					switch(gridId){ 
+						case '0': 
+							code |= SPACE1;
+							code |= SPACE2;
+							code |= SPACE4;
+							break;
+						case '1': 
+							code |= SPACE1;
+							code |= SPACE2;
+							code |= SPACE3;
+							break;
+						case '2': 
+							code |= HORIZONTAL;
+							code |= SPACE1;
+							code |= SPACE2;
+							code |= SPACE3;
+							break;
+						case '3': 
+							code |= HORIZONTAL;
+							code |= SPACE1;
+							code |= SPACE2;
+							code |= SPACE4;
+							break;
+						case '4': 
+							code |= SPACE1;
+							code |= SPACE2;
+							code |= SPACE3;
+							code |= SPACE4;
+							break;
+						case '5': 
+							code |= SPACE1;
+							code |= SPACE2;
+							break;
+						case '6': 
+							code |= HORIZONTAL;
+							code |= SPACE1;
+							code |= SPACE2;
+							break;
+						case '7': 
+							code |= SPACE1;
+							break;
+					}
+			
+					this.model.change('gridScheme', code);
+				},
 			})).open();
 
 		},
-		'onchange selectTheme': function(e){
-			var theme = 'light';
-			switch(e.target.value){
-				case 'dark': theme = 'dark'; break;
-				case 'theme-a': theme = 'theme-a'; break;
-				case 'theme-b': theme = 'theme-b'; break;
-				case 'theme-c': theme = 'theme-c'; break;
-				case 'theme-d': theme = 'theme-d'; break;
-				case 'theme-e': theme = 'theme-e'; break;
-			}
-			this.model.change('theme', theme);
-		},
-		'onchange importProject': function(e){
+		'onchange importProject': function(e) {
 			var file = e.target.files[0];
 
 			if(file){
@@ -4302,7 +4456,7 @@ if(ENV.DPROVIDER){
 
 		}.bind(this));
 	};
-	// @param {String|null} foregroundId - id of project that use for opening
+	// @param {String|null} foregroundId - id of the opened project
 	MainView.prototype.startNewProject = function(foregroundId){
 		if(this.model) this.model.destroy(); // Trigger destroy event
 
@@ -4328,7 +4482,7 @@ if(ENV.DPROVIDER){
 	// @param {String} id - document id
 	// @param {Int} spaceCode - id code of space cell, optional
 	MainView.prototype.openTab = function(id, spaceCode){
-		var 	code = this.model.get('gridScheme'),
+		var 	code = this.stateModel.get('gridScheme'),
 				space_code = spaceCode,
 				$space;
 
@@ -4377,52 +4531,53 @@ if(ENV.DPROVIDER){
 				'<form data-co="form" class="about-popup">' +
 					'<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 					'<div class="sc_section1">' +
-						'<h3 class="sc_header2">Major functions</h3>' +
-						'<p class="sc_article1">ABC is code editor with syntax highlighter.</p>' +
-						'<p class="sc_article1">Supports:</p>' +
+						'<h3 class="sc_header2">Features</h3>' +
+						'<p class="sc_article1">ABC is a syntax-highlighting code editor:</p>' +
 						'<ul class="sc_ul1">' +
 							'<li>Javascript</li>' +
 							'<li>HTML/XML</li>' +
 							'<li>CSS</li>' +
-							'<li>gettext po</li>' +
-                            '<li>markdown</li>' +
+							'<li>Gettext po</li>' +
+                            '<li>Markdown</li>' +
 						'</ul>' +
+						'<p class="sc_article1">Supports direct execution of JavaScript code and HTML pages in a browser.</p>' +
+						'<p class="sc_article1">It works offline and allows you to develop a project as in a desktop IDE.</p>' +
 					'</div>' +
+					// '<div class="sc_section1">' +
+					// 	'<h3 class="sc_header2">Document presentation</h3>' +
+					// 	'<p class="sc_article1">Available execution web pages (with html document type) with javascript and css.</p>' +
+					// '</div>' +
 					'<div class="sc_section1">' +
-						'<h3 class="sc_header2">Document presentation</h3>' +
-						'<p class="sc_article1">Available execution web pages (with html document type) with javascript and css.</p>' +
-					'</div>' +
-					'<div class="sc_section1">' +
-						'<h3 class="sc_header2">Supported Hotkeys</h3>' +
+						'<h3 class="sc_header2">Supported keyboard shortcuts</h3>' +
 						'<div data-co="toggle-btn" class="sc_virtual-link __default">' + VOC. show + '</div>' +
 						'<div data-co="toggle-list" class="about-popup_hidden-content" style="display: none;">' +
-							'<p class="sc_article1">Work with indents:</p>' + 
+							'<p class="sc_article1">Indents:</p>' + 
 							'<ul class="sc_ul2">' +
-								'<li><b>[Tab] + &lt;selection&gt;</b> - insert indent at begin of line</li>' +
-								'<li><b>[Tab + Shift] + &lt;selection&gt;</b> - remove indent at begin of line</li>' +
+								'<li><b>[Tab] + &lt;selection&gt;</b> - insertion of an indent at the begin of the line</li>' +
+								'<li><b>[Tab + Shift] + &lt;selection&gt;</b> - remove indentation at the beginning of a line</li>' +
 							'</ul>' +
-							'<p class="sc_article1">Create duplications:</p>' +
+							'<p class="sc_article1">Duplications:</p>' +
 							'<ul class="sc_ul2">' +
-								'<li><b>[Ctrl + Shift + D]</b> - create duplicate of current line</li>' +
-								'<li><b>[Ctrl + Shift + D] + &lt;selection&gt;</b> - create duplicate of selected text</li>' +
+								'<li><b>[Ctrl + Shift + D]</b> - duplicate the current row</li>' +
+								'<li><b>[Ctrl + Shift + D] + &lt;selection&gt;</b> - to create a duplicate of the selected text</li>' +
 							'</ul>' +
-							'<p class="sc_article1">Comment code:</p>' +
+							'<p class="sc_article1">Code commenting:</p>' +
 							'<ul class="sc_ul2">' +
-								'<li><b>[Ctrl + /]</b> - comment lines</li>' + //
+								'<li><b>[Ctrl + /]</b> - comment the selected code snippet</li>' + //
 							'</ul>' +
-							'<p class="sc_article1">Different modifications:</p>' +
+							'<p class="sc_article1">Code modifications:</p>' +
 							'<ul class="sc_ul2">' +
-								'<li><b>[ALT + G]</b> - write line uppercase</li>' +
-								'<li><b>[ALT + G] + &lt;selection&gt;</b> - write selection uppercase</li>' +
-								'<li><b>[ALT + L]</b> - write a string lowercase</li>' +
-								'<li><b>[ALT + L] + &lt;selection&gt;</b> - write a selection lowercase</li>' +
-								'<li><b>[ALT + B]</b> - beautifire line (implemented only for JS/JSON documents)</li>' +
-								'<li><b>[ALT + B] + &lt;selection&gt;</b> - beautifire selection (implemented only for JS/JSON documents)</li>' +
+								'<li><b>[ALT + G]</b> - to convert a string to uppercase</li>' +
+								'<li><b>[ALT + G] + &lt;selection&gt;</b> - to convert a selected code snippet to uppercase</li>' +
+								'<li><b>[ALT + L]</b> - to convert a string to lowercase</li>' +
+								'<li><b>[ALT + L] + &lt;selection&gt;</b> - to convert a selected code snippet to lowercase</li>' +
+								'<li><b>[ALT + B]</b> - to beautifier code (implemented only for JS/JSON documents)</li>' +
+								'<li><b>[ALT + B] + &lt;selection&gt;</b> - to beautifier seected code snippet (implemented only for JS/JSON documents)</li>' +
 							'</ul>' +
 							'<p class="sc_article1">Navigation between documents:</p>' +
 							'<ul class="sc_ul2">' +
-								'<li><b>[Alt + Right]</b> - move focus to another opened document</li>' +
-								'<li><b>[Alt + R]</b> - Reload parent document. For example when script was updated - parent document view would be reloaded.</li>' +
+								'<li><b>[Alt + Right]</b> - to focus the next open document</li>' +
+								'<li><b>[Alt + R]</b> - to reload the current code in a linked code execution frame. For example, if you update the script, the parent view of the document will be reloaded.</li>' +
 							'</ul>' +
 						'</div>' +
 					'</div>' +
@@ -4477,62 +4632,8 @@ if(ENV.DPROVIDER){
 		return;
 	};
 
-	var 	SPACE1 = 0x1,
-			SPACE2 = 0x2,
-			SPACE3 = 0x4,
-			SPACE4 = 0x8,
-			HORIZONTAL = 0x10;
 
-	MainView.prototype.changeGrid = function(gridId){
-		var code = 0;
 
-		switch(gridId){ 
-			case '0': 
-				code |= SPACE1;
-				code |= SPACE2;
-				code |= SPACE4;
-				break;
-			case '1': 
-				code |= SPACE1;
-				code |= SPACE2;
-				code |= SPACE3;
-				break;
-			case '2': 
-				code |= HORIZONTAL;
-				code |= SPACE1;
-				code |= SPACE2;
-				code |= SPACE3;
-				break;
-			case '3': 
-				code |= HORIZONTAL;
-				code |= SPACE1;
-				code |= SPACE2;
-				code |= SPACE4;
-				break;
-			case '4': 
-				code |= SPACE1;
-				code |= SPACE2;
-				code |= SPACE3;
-				code |= SPACE4;
-				break;
-			case '5': 
-				code |= SPACE1;
-				code |= SPACE2;
-				break;
-			case '6': 
-				code |= HORIZONTAL;
-				code |= SPACE1;
-				code |= SPACE2;
-				break;
-			case '7': 
-				code |= SPACE1;
-				break;
-		}
-
-		this.model.change('gridScheme', code);
-		// TODO check with `&`
-		this.controls.selectGrid.value = gridId;
-	},
 	// TODO check if dublicates
 	MainView.prototype._prebindEvents = function(conf){
 		var 	events = conf || this.events,
@@ -4563,9 +4664,9 @@ if(ENV.DPROVIDER){
 	// ATTENTION: documentId must be a string!
 	var projectModel = new ProjectModel({
 		title: 'dev',
-		grid_id: '4', // схема раскладки
+		// gridId: '4', // схема раскладки
 		opened_ids: ['0', '1', null, '3'], // открытые документы
-		// grid_id: '7', // схема раскладки
+		// gridId: '7', // схема раскладки
 		// opened_ids: ['0'], // открытые документы
 		current_doc: '0', // id of current focused doc
 		docs: {},
@@ -4790,7 +4891,7 @@ if(ENV.DPROVIDER){
 ;DPROVIDER.define('defaultProject', ['DocumentModel', 'ProjectModel'], function(DocumentModel, ProjectModel){
 	var projectModel = new ProjectModel({
 		title: 'default',
-		grid_id: '7', // схема раскладки
+		// gridId: '7', // схема раскладки
 		opened_ids: Array(4), // открытые документы
 		current_doc: '0', // id of current focused doc
 		docs: {},
@@ -4869,9 +4970,22 @@ if(ENV.DPROVIDER){
 	//==========================================
 	// App
 	//==========================================
-	var App = new MainView({
-		el: document.body
-	});
+	var App = new MainView(
+		{el: document.body}, 
+		LOCALSTORAGE_AVAILABLE &&
+			(function(){
+				var _initStateData = saveParse(window.localStorage.getItem('statesnapshot')) || {};
+				return function() {
+					return _initStateData;
+				};
+			}()),
+		function(saveState_o) {
+			if (!LOCALSTORAGE_AVAILABLE) return;
+			setTimeout(function(){
+				window.localStorage['statesnapshot'] = JSON.stringify(saveState_o);
+			}, 200);
+		}
+	);
 	document.onreadystatechange = function(){
 		if(document.readyState == 'complete'){
 			// Create default 
@@ -4901,7 +5015,7 @@ if(ENV.DPROVIDER){
 	){
 		var 	projectModel = new ProjectModel(Object.assign({ // Merge in default settings
 					title: '',
-					grid_id: '7', // схема раскладки
+					// gridId: '7', // схема раскладки
 					opened_ids: Array(4), // открытые документы
 					current_doc: 0, // id of current focused doc
 					docs: {}
@@ -4915,8 +5029,17 @@ if(ENV.DPROVIDER){
 		projectModel._counter = prevPrjData._counter;
 
 		if(App.model) App.model.destroy(); // Trigger destroy event
-		App.initProject(projectModel);
-	}else{
+
+		var initStateData = saveParse(window.localStorage.getItem('statesnapshot')) || {};
+		App.initProject(projectModel, Object.assign({ // Merge in default settings
+			showProjectList: false,
+			hideListPanel: false,
+			gridId: '7',
+			gridScheme: 0 | 0x1,
+			themeId: 'light',
+		}, initStateData));
+	}else{startNewProject
+		// TODO add default stateModel!!!
 		// Local storage not available
 		App.startNewProject(QUERY_OPTIONS.project);
 	}
