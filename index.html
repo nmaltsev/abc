@@ -14,7 +14,6 @@
 				<h2 class="sc_logo">ABC</h2>
 				<div class="sc_toppanel">
 					<input type="text" data-co="project-title" class="sc_toppanel_project-name" placeholder="Noname project" title="Project title"/>	
-					
 					<div class="sc_toppanel_menu-label" data-co="toppanel-menu-label">
 						<span>Project</span>
 						<div class="sc_toppanel_menu-list" data-co="toppanel-menu-list" style="display:none;">
@@ -27,21 +26,23 @@
 							<!-- <button class="sc_toppanel_menu-item" data-co="save-project">Save</button> -->
 							<button class="sc_toppanel_menu-item" data-co="load-default-project">Load default project</button>
 							<button class="sc_toppanel_menu-item" data-co="load-test-project">Load test project</button>
-							<button class="sc_toppanel_menu-item" data-co="about-btn">About</button>
+							<!-- <button class="sc_toppanel_menu-item" data-co="about-btn">About</button> -->
 						</div>
 					</div>
+					<button class="sc_toppanel_about sc_virtual-link __chromeless __white" data-co="about-btn">About</button>
 				</div>
-
 			</div>
 			<div class="sc_layout-mid">
 				<div class="sc_layout-tools" data-co="tools">
 					<button class="tool-btn" data-co="tools-add-btn"><svg class="svg-btn-container"><use xlink:href="#svg-add"></use></svg></button>
+					<button class="tool-btn" data-co="last-projects-btn">P</button>
+					<button class="tool-btn" data-co="toggle-list-btn">&lt;</button>
+					<button class="tool-btn" data-co="settings-btn">S</button>
 				</div>
-				<div class="sc_layout-left">
-					<div class="sc_documents-list" data-co="items">
-						
-					</div>
-				</div>
+				<div class="sc_layout-left"><!--
+					--><div class="sc_documents-list" data-co="items"></div><!--
+					--><div class="sc_projects-list" data-co="projects" style="display:none;">TODO</div><!--
+				--></div>
 				<div class="sc_layout-right grid_column" data-co="grid">
 					<div class="grid_row grid_cell" data-co="half1">
 						<div class="grid_cell" data-co="space1"></div>
