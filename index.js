@@ -1,4 +1,4 @@
-/*Compiled 2019-10-13:12:58:17*/
+/*Compiled 2019-10-14:21:56:55*/
 ﻿/* 
 $4 v15 2016/07/29
 DOM manipulation library
@@ -1299,7 +1299,9 @@ function each(collection, callback){
 
 		this.children = {};
 		this.render(conf);
-		this.el.style.display = 'none';
+		if (this.el.tagName.toLowerCase() !== 'dialog') {
+			this.el.style.display = 'none';
+		}
 		this.el.setAttribute('tabindex', 0);
 		this.$heap = conf.heap || document.getElementById('node-heap') || document.body;
 		this.$heap.appendChild(this.el);
@@ -1365,7 +1367,8 @@ function each(collection, callback){
 		document.documentElement.style.overflow = 'hidden';
 		document.body.overflow = 'hidden';
 
-		if (this.el.tagName === 'dialog') {
+		if (this.el.tagName.toLowerCase() === 'dialog') {
+			console.log('Dialog');
 			this.el.setAttribute('open', true);
 		} else {
 			this.el.style.display = '';	
@@ -1377,7 +1380,7 @@ function each(collection, callback){
 		this.onClose(this, status) || this._completeClose();
 	};
 	BasePopupView.prototype._completeClose = function(){
-		if (this.el.tagName === 'dialog') {
+		if (this.el.tagName.toLowerCase() === 'dialog') {
 			this.el.removeAttribute('open');
 		} else {
 			this.el.style.display = 'none';
@@ -3193,23 +3196,39 @@ if(ENV.DPROVIDER){
 	E._console = _console;
 
 	function object2string(o) {
-		let s = '<div class="object-container"><b>{</b>';
-		let descriptors = Object.getOwnPropertyDescriptors(o);
-		let value;
-		
-		for (let property in descriptors) {
-			value = descriptors[property].value;
-			if (typeof(value) == 'object') {
-				s += '<p>' + escape(property) + ':</p>';
-				s += object2string(value);
-			} else {
-				s += '<p>' + escape(property) + ': ' + (typeof(value) == 'string' ? '"' + escape(value.toString()) + '"' : escape(value.toString())) + '</p>';
-			}
-			
-		}
-		s += '<b>}</b></div>';
+		_console.log('[CALL o2s]');
+		_console.dir(o);
+		let s = '<div class="object-container">';
+		s += _object2string(o);
+		s += '</div>';
 		return s;
 	}
+	function _object2string(o) {
+		if (typeof(o) !== 'object' || !o || (typeof(o) === 'object' && o.constructor !== Object) ) {
+			if (typeof(o) == 'string') return '"' + escape(o + '') + '"';
+			return escape(o + ''); // "+" converts all types to string!
+		} else {
+			let s = '<b>{</b>';
+			let descriptors = Object.getOwnPropertyDescriptors(o);
+			let value;
+			
+			for (let property in descriptors) {
+				value = descriptors[property].value;
+				if (typeof(value) === 'object' && value.constructor === Object) {
+					s += '<p>' + escape(property) + ':</p>';
+					s += object2string(value);
+				} else {
+					s += '<p>' + escape(property) + ': ' + _object2string(value) + '</p>';
+				}
+			}
+			
+			s += '<b>}</b>';
+			
+			return s;
+		}
+	}
+
+
 	
 	E.console = {
 		log: function(){
@@ -3603,9 +3622,9 @@ if(ENV.DPROVIDER){
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v182 2019/10/12
-	// (C) 2015-2019
-	var VER = 182;
+	// Editor with syntax highlighting v183 2019/10/14
+	// (C) 2015-2020
+	var VER = 183;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
