@@ -1,4 +1,4 @@
-/*Compiled 2019-10-14:21:56:55*/
+/*Compiled 2019-10-15:22:46:49*/
 /* Normalize styles*/
 html{ height: 100%; font: 13px/15px Arial; }
 body{ margin: 0;height: 100%; }
@@ -43,7 +43,7 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 	-webkit-flex: 0 1 50px;
 	-moz-flex: 0 1 50px;
 	flex: 0 1 50px;
-	border-bottom: 1px solid #aaa;
+	/* border-bottom: 1px solid #aaa; */
 	color: #555;
 }
 .sc_layout-top.__theme1{
@@ -210,8 +210,8 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 	/*border-left: 1px solid #ccc;*/
 }
 .sc_edit-pre:focus{
-	outline: 1px solid #e3e3e3;
-	outline-offset: -1px;
+	outline: 1px solid #333;
+	outline-offset: 0px;
 }
 .sc_edit-header{
 	position: absolute;
@@ -515,6 +515,7 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 	position: relative;
 	padding: 0 158px 0 calc(50px + 240px);
 	margin: 10px 0 0 0;
+	height: 40px;
 }
 
 .sc_toppanel_about{

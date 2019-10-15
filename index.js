@@ -1,4 +1,4 @@
-/*Compiled 2019-10-14:21:56:55*/
+/*Compiled 2019-10-15:22:46:49*/
 ﻿/* 
 $4 v15 2016/07/29
 DOM manipulation library
@@ -3131,11 +3131,14 @@ if(ENV.DPROVIDER){
 		this.controls.header.textContent = this.model.get('title');
 	};
 	JsConsole.prototype.updateContent = function(doc, source){
-		doc.open()
+		doc.open();
+		doc.write('<html><head>');
 		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:0 0 0 10px;}.message-error{background:#ffddcf;}</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
+		doc.write('</head><body>');
 		// The try block can catch ReferenceError
 		doc.write('<script>try{' + source + '}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+		doc.write('</body></html>');
 		doc.close();
 	};
 	JsConsole.prototype.injectCode =
@@ -3196,8 +3199,7 @@ if(ENV.DPROVIDER){
 	E._console = _console;
 
 	function object2string(o) {
-		_console.log('[CALL o2s]');
-		_console.dir(o);
+		//_console.dir(o);
 		let s = '<div class="object-container">';
 		s += _object2string(o);
 		s += '</div>';
@@ -3228,41 +3230,50 @@ if(ENV.DPROVIDER){
 		}
 	}
 
-
+	E.addEventListener('unhandledrejection', function(e) {
+		console._reportError(event.reason);
+		_console.log('Promise exception');
+		_console.dir(e);
+	  });
 	
 	E.console = {
-		log: function(){
-			var 	len = arguments.length,
-					s = arguments[0];
+		log: function(s, ...args){
+			var 	len = args.length;
 			
-			if(len > 1){
-				for(var i = 1; i < len; i++){
+			if(len > 0){
+				for(var i = 0; i < len; i++){
 					s = s.replace('%s', arguments[i]);
 				}
-				
 			}else{
-				s += '';
+				s += ''; // Converting to string
 			}
-			document.write('<p>' + s.replace(/\\n/g, '<br/>&#8203;') + '</p>');
+			let $n = document.createElement('p');
+			$n.innerHTML = escape(s).replace(/\\n/g, '<br/>&#8203;')
+			document.body.appendChild($n);
+
 		},
 		dir: function(o){
-			// document.write('<pre>' + JSON.stringify(o, null, '\\t') + '</pre>');
-			document.write(object2string(o));
+			let $n = document.createElement('div');
+			$n.className = 'object-container';
+			$n.innerHTML = _object2string(o);
+			document.body.appendChild($n);
 		},
 		clear: function(){
 			document.body.innerHTML = '';
 		},
 		_reportError: function(message){
-			document.write('<p class="message-error">' + escape(message).replace(/\\n/g, '<br/>&#8203;') + '</p>');
+			let $n = document.createElement('p');
+			$n.className = 'message-error';
+			$n.innerHTML = escape(message).replace(/\\n/g, '<br/>&#8203;');
+			document.body.appendChild($n);
 		}
 	};
 	E.onerror = function(e, s, line, position, error){
-		// console.log(escape(error.stack).replace(/\\n/g, '<br/>') + ' ' + line + ':' + position);
 		console._reportError(error.stack + ' ' + line + ':' + position);
 		_console.log('Catch error');
 		_console.dir(arguments);
-		// _console.log(error.stack.replace(/\\n/g, '<br/>'));
 	};
+	
 }(window));`;
 	JsConsole.prototype.events = {
 		'onclick close': function(){
@@ -3622,9 +3633,9 @@ if(ENV.DPROVIDER){
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v183 2019/10/14
+	// Editor with syntax highlighting v184 2019/10/15
 	// (C) 2015-2020
-	var VER = 183;
+	var VER = 184;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
