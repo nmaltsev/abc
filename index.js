@@ -1,4 +1,4 @@
-/*Compiled 2019-10-15:22:46:49*/
+/*Compiled 2019-10-16:20:56:15*/
 ﻿/* 
 $4 v15 2016/07/29
 DOM manipulation library
@@ -2579,18 +2579,31 @@ if(ENV.DPROVIDER){
 		this.parent = conf.parent;
 
 		if(conf.numerateLines){
-			this.listen('change:linesCount', function(count, model){
+			// TOREMOVE
+			// this.listen('change:linesCount', function(count, model){
+			// 	var prevCount = model.previous.linesCount || 0;
+
+			// 	if(count > prevCount){ // Scroll down
+			// 		this.controls.edit.scrollTop += 18; // TODO calculate line height
+			// 		$4.emptyNode(this.controls.scale);
+			// 		this.controls.scale.appendChild(numberFragment(count + 2));
+			// 		this.controls.scale.scrollTop = this.controls.edit.scrollTop;
+			// 	}// else if(count < model.previous.linesCount){console.log('\tscale reduce');}
+
+			// 	this.controls.edit.scrollLeft = 0;
+			// });	
+			this.model.on('change:linesCount', (count, model) => {
 				var prevCount = model.previous.linesCount || 0;
 
 				if(count > prevCount){ // Scroll down
-					this.controls.edit.scrollTop += 18; // TODO calculate line height
+					this.controls.edit.scrollTop += 24 /*18*/; // TODO calculate line height
 					$4.emptyNode(this.controls.scale);
 					this.controls.scale.appendChild(numberFragment(count + 2));
 					this.controls.scale.scrollTop = this.controls.edit.scrollTop;
 				}// else if(count < model.previous.linesCount){console.log('\tscale reduce');}
 
 				this.controls.edit.scrollLeft = 0;
-			});	
+			});
 		}else{
 			this.controls.scale.style.display = 'none';
 		}
@@ -2758,10 +2771,7 @@ if(ENV.DPROVIDER){
 			}.bind(this);
 			// Need to restore blocks at copying blocks
 			this.htmlEdit._hooks.oncopy = function(code){
-				console.log('Oncopy hook');
-				console.log(code)
 				var upd = this.model.getSource(code);
-				console.log(code);
 				return upd;
 			}.bind(this);
 
@@ -2841,24 +2851,46 @@ if(ENV.DPROVIDER){
 			}
 		}
 
-		this.listen('change:focus', function(isFocused, m){
-			this.controls.header.parentNode.classList[isFocused ? 'add' : 'remove']('__active');
-		});
-		this.listen('change:title', function(title, m){
-			this.controls.header.textContent = title;
-		});
-		this.listen('close', function(){
-			this.el.remove();
-		});
-		this.listen('destroy', function(m){
-			m.trigger('close', m, this);
-            this._removeEventListeners();
-			this.remove();
-			console.log('\t[TRIG destroy model edit.view] %s', m.get('id'));
-		});
-		this.listen('updateContent', function(m, newContent){
-			this.htmlEdit.setText(newContent);
-			this.htmlEdit.setCaretPos(0);				
+		// TOREMOVE
+		// this.listen('change:focus', function(isFocused, m){
+		// 	this.controls.header.parentNode.classList[isFocused ? 'add' : 'remove']('__active');
+		// });
+		// this.listen('change:title', function(title, m){
+		// 	this.controls.header.textContent = title;
+		// });
+		// this.listen('close', function(){
+		// 	this.el.remove();
+		// });
+		// this.listen('destroy', function(m){
+		// 	m.trigger('close', m, this);
+        //     this._removeEventListeners();
+		// 	this.remove();
+		// 	console.log('\t[TRIG destroy model edit.view] %s', m.get('id'));
+		// });
+		// this.listen('updateContent', function(m, newContent){
+		// 	this.htmlEdit.setText(newContent);
+		// 	this.htmlEdit.setCaretPos(0);				
+		// });
+
+		this.model.listen({
+			'change:focus': (isFocused/*, m*/) => {
+				this.controls.header.parentNode.classList[isFocused ? 'add' : 'remove']('__active');
+			},
+			'change:title': (title/*, m*/) => {
+				this.controls.header.textContent = title;
+			},
+			'close': () => {
+				this.el.remove();
+			},
+			'destroy': (m) => {
+				m.trigger('close', m, this);
+				this._removeEventListeners();
+				this.remove();
+			},
+			'updateContent': (m, newContent) => {
+				this.htmlEdit.setText(newContent);
+				this.htmlEdit.setCaretPos(0);				
+			},
 		});
 
 		this._removeEventListeners = this._prebindEvents();
@@ -2960,22 +2992,41 @@ if(ENV.DPROVIDER){
 		Backside.View.prototype.initialize.call(this, conf);
 		this.el.style.display = 'none';
 		this._removeEventListeners = this._prebindEvents();
-		this.listen('closePresentation', function(m){
-			this.clearSubResources();
-			this.appModel.closeSpace(m.getPresentationID());
-			this.el.remove();
-		});
-		this.listen('destroy', function(m){
-            this._removeEventListeners();
-			this.clearSubResources();
-			this.remove();
-		});
-		this.listen('reloadMainFrame', function(m){
-			this.refresh();
-		});
-		// This event handler would be flushed when parent view would be removed with all child views
-		this.listen('change:title', function(title, m){
-			this.controls.header.textContent = title;
+		// TOREMOVE
+		// this.listen('closePresentation', function(m){
+		// 	this.clearSubResources();
+		// 	this.appModel.closeSpace(m.getPresentationID());
+		// 	this.el.remove();
+		// });
+		// this.listen('destroy', function(m){
+        //     this._removeEventListeners();
+		// 	this.clearSubResources();
+		// 	this.remove();
+		// });
+		// this.listen('reloadMainFrame', function(m){
+		// 	this.refresh();
+		// });
+		// this.listen('change:title', function(title, m){
+		// 	this.controls.header.textContent = title;
+		// });
+		this.model.listen({
+			'closePresentation': (m) => {
+				this.clearSubResources();
+				this.appModel.closeSpace(m.getPresentationID());
+				this.el.remove();
+			},
+			'destroy': (/*m*/) => {
+				this._removeEventListeners();
+				this.clearSubResources();
+				this.remove();
+			},
+			'reloadMainFrame': (/*m*/) => {
+				this.refresh();
+			},
+			// This event handler would be flushed when parent view would be removed with all child views
+			'change:title': (title/*, m*/) => {
+				this.controls.header.textContent = title;
+			},
 		});
 	};
 	FrameView.prototype.clearSubResources = function(){
@@ -3161,7 +3212,7 @@ if(ENV.DPROVIDER){
 	const _console = E.console;
 
 	function escape(str){
-		return str ? str.replace(/[<>&"']/g, function(m){
+		return (str && str.replace) ? str.replace(/[<>&"']/g, function(m){
 			return ESCAPE_MAP[m];
 		}) : '';
 	};
@@ -3230,19 +3281,20 @@ if(ENV.DPROVIDER){
 		}
 	}
 
-	E.addEventListener('unhandledrejection', function(e) {
-		console._reportError(event.reason);
-		_console.log('Promise exception');
-		_console.dir(e);
-	  });
+	
 	
 	E.console = {
-		log: function(s, ...args){
+		log: function(a0, ...args){
 			var 	len = args.length;
+			var 	s = a0 + '';
+
+			_console.dir(s);
+			_console.dir(args);
+			
 			
 			if(len > 0){
 				for(var i = 0; i < len; i++){
-					s = s.replace('%s', arguments[i]);
+					s = s.replace('%s', args[i]);
 				}
 			}else{
 				s += ''; // Converting to string
@@ -3269,10 +3321,16 @@ if(ENV.DPROVIDER){
 		}
 	};
 	E.onerror = function(e, s, line, position, error){
-		console._reportError(error.stack + ' ' + line + ':' + position);
+		console._reportError(e.stack + ' ' + line + ':' + position);
 		_console.log('Catch error');
 		_console.dir(arguments);
 	};
+	E.addEventListener('unhandledrejection', function(e) {
+		console._reportError(e.reason.stack + '');
+		_console.log('Promise exception');
+		_console.dir(e);
+		_console.dir(e.reason +'');
+	});
 	
 }(window));`;
 	JsConsole.prototype.events = {
@@ -3633,9 +3691,9 @@ if(ENV.DPROVIDER){
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v184 2019/10/15
+	// Editor with syntax highlighting v185 2019/10/15
 	// (C) 2015-2020
-	var VER = 184;
+	var VER = 185;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
@@ -3807,9 +3865,11 @@ if(ENV.DPROVIDER){
 					this.stateModel.change('hideListPanel', false);
 				}
 			},
-			'change:hideListPanel': (hideListPanel/*, m*/) => {
+			'change:hideListPanel': (hideListPanel, m) => {
 				this.controls.items.parentNode.style.display = hideListPanel ? 'none' : '';
 				this.controls.toggleListBtn.textContent = hideListPanel ? '>' : '<';
+				// the application saves its states each time the property is changed
+				this.$saveInitState(m.attr);
 			},
 			// Attention: gridId converting to gridScheme 
 			'change:gridScheme': (code) => {
@@ -4165,8 +4225,6 @@ if(ENV.DPROVIDER){
 			this.stateModel.change('hideListPanel', !this.stateModel.get('hideListPanel'));
 		},
 		'onclick settingsBtn': function(e) {
-			console.log('[Click settings]');
-			console.dir(this);
 			var _self = this;
 
 			// todo this.stateModel
@@ -5061,6 +5119,8 @@ if(ENV.DPROVIDER){
 		if(App.model) App.model.destroy(); // Trigger destroy event
 
 		var initStateData = saveParse(window.localStorage.getItem('statesnapshot')) || {};
+		console.log('initStateData');
+		console.dir(initStateData);
 		App.initProject(projectModel, Object.assign({ // Merge in default settings
 			showProjectList: false,
 			hideListPanel: false,
