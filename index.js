@@ -1,4 +1,4 @@
-/*Compiled 2019-10-16:20:56:15*/
+/*Compiled 2019-11-24:19:33:25*/
 ﻿/* 
 $4 v15 2016/07/29
 DOM manipulation library
@@ -434,7 +434,471 @@ if(!('remove' in Element.prototype)){
 }(this));
 
 ;
-/* Backside  v20 2018/02/15 */
+//==================================
+// View compiler (v. 11) 2019
+//==================================
+;DPROVIDER.define(null, function ViewCompiler(){  
+	// https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_templates_and_slots
+	// console.dir(customElements);
+	
+  // TODO: 
+  // 5.  create iterator method
+  //      function(openBr, closeBr, function(block, isOpen){})
+
+  
+  // TODO use another literals
+  const LIT = {
+    $if: '*if',
+    $equal: '*equal',
+    $model: '*model',
+    $alias: '*alias',
+    $on: '*on',
+    $dispatch: '*dispatch',
+  };
+  
+  // CleaningNode and CleaningLeaf build a tree of cleaning
+  class CleaningNode {
+		constructor (id) {
+			if (id) this.id = id;
+			this.subjects = [];
+		  this.$target = null;
+		  this._onDestroy = null;
+		}
+    
+    onDestroy(destructor) {
+      this._onDestroy = destructor;
+    }
+    
+    destroy(destroySelf=true) {
+      let i_n = this.subjects.length;
+      
+      while(i_n-- > 0) {
+          this.subjects[i_n].destroy();
+      }
+      this.subjects.length = 0;
+      if (destroySelf && this._onDestroy) {
+        this._onDestroy(this);
+      }
+    }
+	}
+
+  class CleaningLeaf {
+    constructor () {
+      this._onDestroy = null;
+    }
+    
+    onDestroy(destructor) {
+      this._onDestroy = destructor;
+    }
+    
+    destroy() {
+      if (this._onDestroy) {
+        this._onDestroy(this);
+      }
+    }
+  }
+  
+  // @param {String} pattern
+  // @param {Model} model
+  // @param {Object} pipesMap
+  // @return {String} value
+  function pipeExecute(pattern_s, model, pipesMap){
+    if (!pattern_s.includes('|') || !pipesMap) {
+      return model.get(pattern_s) || '';
+    }
+    
+    const pipes = pattern_s.replace(/\s+/g, '').split('|');
+    let value  = model.get(pipes.shift()) || '';
+    let i = 0;
+    
+    while (i < pipes.length) {
+      if (pipesMap.hasOwnProperty(pipes[i])) {
+        value = pipesMap[pipes[i]](value);
+      }
+      i++;
+    }
+    return (value).toString();
+  }
+  
+  function getModelPropertyName(pattern_s) {
+    const pos = pattern_s.indexOf('|');
+    
+    if (pos < 0) return pattern_s;
+    return pattern_s.substring(0, pos).trim();
+  }
+  
+  // @param {String} pattern
+  // @param {Model} model
+  // @param {Object} pipes
+  // @return {String}
+  function oneTimeInterpolation(pattern, model, pipes) {
+    return pattern.replace(
+      /\[\[([^\[\]]*)\]\]/g,
+      function(match, frag, pos, str) {
+        // return model.get(frag) || '';
+        return pipeExecute(frag, model, pipes);
+      }
+    );
+  }
+  
+  // @param {HtmlElement} $node
+  // @param {Model} model
+  // @param {CleaningNode} scope
+  // @param {Object} pipes
+  function stringInterpolation($node, model, scope, pipes) {
+    let $frag = document.createDocumentFragment();
+    let pos = 0;
+    let start = pos;
+    let isOpen = false;
+    let $text;
+    
+    while (pos !== -1) {
+      pos = $node.data.indexOf(isOpen ? '}}': '{{', start);
+      if (pos < 0) continue;
+      let textFragment = $node.data.substring(start, pos);
+      const propertyName = getModelPropertyName(textFragment);
+      
+      $text = document.createTextNode(
+        isOpen  
+          //~ ? (model.get(textFragment) || '') 
+          ? pipeExecute(textFragment, model, pipes) 
+          : textFragment
+      );
+      $frag.appendChild($text);
+      
+      if (isOpen) {
+        // For each interpolated block {{***}} there will be an observer
+        let watcher = new CleaningLeaf();
+        watcher.$target = $text;
+        watcher.property = textFragment;
+        
+        let handler = function(value, m_o) {
+          if (m_o.previous && m_o.previous[propertyName] === value) return;
+          watcher.$target.textContent = pipeExecute(textFragment, model, pipes);
+        };
+        model.on('change:' + propertyName, handler);
+        watcher.onDestroy(function(self) {
+          model.off('change:' + propertyName, handler);
+        });
+        scope.subjects.push(watcher);
+      }
+      start = pos + 2;
+      isOpen = !isOpen;
+    }
+    $text = document.createTextNode($node.data.substring(start));
+    $frag.appendChild($text);
+    $node.replaceWith($frag);
+  }
+
+  // TODO: create iterator method
+  //function(openBr, closeBr, function(block, isOpen){})
+  
+  function attributeInterpolation($attr, $m, $p){
+    let value = $attr.value; 
+    let pos = 0;
+    let start = pos;
+    let isOpen = false;
+    let propertyName;
+    
+    let watcher = new CleaningLeaf();
+    watcher.$target = [];
+    watcher.watchProperties = [];
+    watcher.update = function(model, pipes){
+      let newValue_s = this.$target.map(function(item){
+        if (typeof(item) === 'string') return item;
+        
+        return item(model, pipes);
+      }).join('');
+      $attr.value = newValue_s;
+    };
+    watcher.onDestroy(function(self) {
+      for(let i = 0; i < self.watchProperties.length; i += 2) {
+        $m.off(self.watchProperties[i], self.watchProperties[i + 1]);
+      }
+    });
+    
+    while (pos !== -1) {
+      pos = value.indexOf(isOpen ? '}}': '{{', start);
+      if (pos < 0) continue;
+      let textFragment = value.substring(start, pos);
+      
+      if (isOpen) {
+        propertyName = getModelPropertyName(textFragment);
+        watcher.watchProperties.push(propertyName, $m.on('change:' + propertyName, function(pValue){
+          // TODO rerender with list
+          watcher.update($m, $p);
+        }));
+        watcher.$target.push(function(_m, _p){
+          return pipeExecute(textFragment, _m, _p) 
+        });
+      } else {
+        watcher.$target.push(textFragment);
+      }
+      start = pos + 2;
+      isOpen = !isOpen;
+    }
+    watcher.$target.push(value.substring(start));
+    watcher.update($m, $p);
+    return watcher;
+  }
+	
+  // @property Array<function, function> - validator and activator
+	const directiveMap = [];
+	
+	// #1 *if="" *equal=""
+	directiveMap.push(function($n){
+		let ifAttr = $n.attributes[LIT.$if];
+		let equalAttr = $n.attributes[LIT.$equal];
+		return ifAttr && ifAttr.value && 
+			equalAttr && equalAttr.value &&
+			$n.tagName.toLowerCase() === 'template';
+	}, function($n, $m, _pipes){
+
+		let subScope = new CleaningNode('*if');
+		let modelPropertyName_s = $n.attributes[LIT.$if].value;
+		let equalData = JSON.parse($n.attributes[LIT.$equal].value);
+		let isFirst = true;
+		
+		let changeHandler = $m.on('change:' + modelPropertyName_s, function(value, m_o) {
+			if (m_o.previous && m_o.previous[modelPropertyName_s] === value && !isFirst) return;
+			
+      if (Array.isArray(equalData) 
+				? equalData.indexOf(value) !== -1
+				: equalData === value
+			) {
+				// Is equal
+
+				// check if view is already created
+				if (!subScope.$target){
+				  // If <template> contains only one node the app should insert it directly
+				  let $clone = document.importNode($n.content, true);
+				  let $temp;
+          
+				  if ($clone.children.length === 1) {
+					  $temp = $clone;
+            // Attention: next command must be executed before element will be inserted in DOM, because $temp is HtmlDocumentFragment 
+            subScope.$target = $temp.children[0]; 
+				  } else {
+					  subScope.$target = $temp = $4.cr('div');
+					  $temp.appendChild($clone);
+				  }
+
+				  $4.appendAfter($n, $temp);
+          subScope.subjects.push(compile(subScope.$target, $m, _pipes));
+				}
+			} else if (subScope.$target){
+				subScope.destroy(false);
+				$4.removeNode(subScope.$target);
+				subScope.$target = null;
+			}
+			isFirst = false;
+		});
+		// Initialize execution
+		$m.trigger('change:' + modelPropertyName_s, $m.get(modelPropertyName_s), $m); 
+		// Creation of destructor
+		subScope.onDestroy((_) => {
+			$m.off('change:' + modelPropertyName_s, changeHandler);
+		});
+		
+		return subScope;
+	});
+	// #2 *model=""
+	directiveMap.push(function($n){
+		const modelAttr = $n.attributes[LIT.$model];
+		const tagName = $n.tagName.toLowerCase();
+    
+    return modelAttr && modelAttr.value 
+      && (tagName === 'input' || tagName === 'select')
+	}, function($n, $m){
+    console.log('ACTIVATE directive %s', $n.tagName);	
+		let subScope = new CleaningNode('*model');
+		let modelAttr = $n.attributes[LIT.$model].value;
+    
+    let inputHandler = (e) => {
+      const $n = e.target;
+      // Default for `text` type:
+      let value = $n.value;
+
+      // TODO add other types
+      if ($n.tagName.toLowerCase() === 'input') {
+        if (
+          $n.type === 'number'
+          || $n.type === 'range'
+        ) {
+            value = parseInt(value, 0);
+        }
+
+        if (
+          $n.type === 'checkbox'
+          || $n.type === 'radio'
+        ) {
+            value = e.target.checked;
+        }
+        
+        if ($n.type === 'date') {
+          value = $n.valueAsDate;
+        }
+      }
+
+      $m.change(modelAttr, value);
+    };
+
+    if ($n.type === 'radio' || $n.type === 'checkbox' || $n.type === 'date') {
+      // In case of <input>
+      let changeHandler = $m.on('change:' + modelAttr, function(value, m_o) {
+          if (m_o.previous && m_o.previous[modelAttr] === value) return;
+          $n.checked = value;
+      });
+      $n.addEventListener('change', inputHandler);
+      subScope.onDestroy((_) => {
+          $m.off('change:' + modelAttr, changeHandler);
+          $n.removeEventListener('change', inputHandler);
+      });
+      // Initial set
+      if ($m.get(modelAttr)){
+         $n.checked = $m.get(modelAttr);
+         // Force set
+         $m.trigger('change:' + modelAttr, $m.get(modelAttr), $m);
+         inputHandler({target: $n});
+      }
+    } else {
+      let changeHandler = $m.on('change:' + modelAttr, function(value, m_o) { // for <input>
+        if (m_o.previous && m_o.previous[modelAttr] === value) return;
+        $n.value = value;
+      });
+      $n.addEventListener('input', inputHandler);
+      subScope.onDestroy((_) => {
+          $m.off('change:' + modelAttr, changeHandler);
+          $n.removeEventListener('input', inputHandler);
+      });
+      // Initial set
+      if ($m.get(modelAttr)){
+        const initValue = $m.get(modelAttr);
+        $n.value = initValue;
+        
+        if ($n.tagName.toLowerCase() === 'input') {
+          // Force set
+          $m.trigger('change:' + modelAttr, initValue, $m);
+          inputHandler({target: $n});
+        } else if ($n.tagName.toLowerCase() === 'select'){
+          // Fixing the case when options use interpolations
+          setTimeout(function() {$n.value = initValue;}, 0);
+        }
+      }  
+    }
+    
+		return subScope;
+	});
+	// #3 *on="" *dispatch=""
+	directiveMap.push(function($n){
+		return $n.attributes[LIT.$on] && $n.attributes[LIT.$dispatch]
+      && $n.attributes[LIT.$on].value && $n.attributes[LIT.$dispatch].value;
+	}, function($n, $m){	
+		let subScope = new CleaningNode('*on');
+		// Binding DOM events with Model events
+    let DOMEventName_s = $n.attributes[LIT.$on].value;
+    let ModelDispatcherName_s = $n.attributes[LIT.$dispatch].value;
+    let DOMEventHandler_f = function(e){
+      $m.trigger(ModelDispatcherName_s, e, $m);
+    }
+    
+    $n.addEventListener(DOMEventName_s, DOMEventHandler_f);
+    subScope.onDestroy((/*ws*/) => {
+      $n.removeEventListener(DOMEventName_s, DOMEventHandler_f);
+    });
+		return subScope;
+	});
+	// #4 *alias="<alias name>"
+  // Triggers 'init-alias:<alias name>' and 'remove-alias:<alias name>'
+	directiveMap.push(function($n){
+		return $n.attributes[LIT.$alias] && $n.attributes[LIT.$alias].value;
+	}, function($n, $m){	
+		let subScope = new CleaningNode('*alias');
+    let alias_s =$n.attributes[LIT.$alias].value;
+    
+    $m.trigger('init-alias:' + alias_s, $n, $m);
+    subScope.onDestroy((/*ws*/) => {
+      $m.trigger('remove-alias:' + alias_s, $n, $m);
+    });
+    
+		return subScope;
+	});
+	
+	/*// #_ __
+	directiveMap.set(function($n){
+		
+	}, function($n, $m){	
+		let subScope = new CleaningNode('*_');
+		
+		return subScope;
+	});*/
+  
+  // @param {HTMLElement} $root
+  // @param {Model} _model
+  // @param {Object} _pipes: {[String]: (Any) => Any }
+  // @return {CleaningNode} scope
+	function compile($root, _model, _pipes) {
+		const scope = new CleaningNode();
+    let $node; 
+    
+    // The creation of the iterator for text nodes
+    var nodeIterator = document.createNodeIterator(
+      $root,
+      NodeFilter.SHOW_TEXT,
+      { 
+        acceptNode: function(node) {
+          if ( /\{\{[^\\{\}]*\}\}|\[\[[^\[\]]*\]\]/.test(node.data) ) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
+      },
+      false
+    );
+	
+    // The interpolation of text blocks
+    while (($node = nodeIterator.nextNode())) {
+      if ($node.data.includes('[[')) { // one time interpolation
+        $node.textContent = oneTimeInterpolation($node.textContent, _model, _pipes);
+      }
+      if ($node.data.includes('{{')) {
+        stringInterpolation($node, _model, scope, _pipes);
+      }
+    }
+   
+    var directiveIterator = document.createNodeIterator(
+        $root,
+        NodeFilter.SHOW_ELEMENT,
+        null,
+        false
+    );
+    
+    let $attr;
+    
+    while (($node = directiveIterator.nextNode())) {
+      // Attribute interpolation must be done before directories
+      for ($attr of $node.attributes) {
+        if ($attr.value.includes('[[')) { // one time interpolation
+          $attr.value = oneTimeInterpolation($attr.value, _model, _pipes);
+        }
+        
+        if ($attr.value.includes('{{')) {
+          scope.subjects.push(attributeInterpolation($attr, _model, _pipes));
+        }
+      }
+      // Iterate through the directive list
+      for(let i = 0; i < directiveMap.length; i+= 2) {
+        if (!directiveMap[i]($node)) continue; 
+        scope.subjects.push(directiveMap[i + 1]($node, _model, _pipes));
+      }
+    }
+		
+    return scope;
+	};
+  
+  return compile;
+});
+;
+/* Backside  v23 2019/11/23 */
 ;(function(_env){
 // Need polifils for NodeElement:remove ($4.removeNode(this.el);)
 //==================================
@@ -442,8 +906,11 @@ if(!('remove' in Element.prototype)){
 //==================================
 {
 	function Events(){
-		this._handlers = Object.create(null);
+		this._init();
 	};
+  Events.prototype._init = function(){
+          this._handlers = Object.create(null);
+  }
 	// @memberOf Events - execute event callbacks
 	// @param {Object} options - event options
 	// @return {Bool} - if true - stop event propagation
@@ -472,10 +939,11 @@ if(!('remove' in Element.prototype)){
 	// @param {String} name - property of model
 	// @param {Function} cb - callback
 	Events.prototype.on = function(name, cb){
-		if(!Array.isArray(this._handlers[name])){
+		if (!Array.isArray(this._handlers[name])) {
 			this._handlers[name] = [];
 		}
 		this._handlers[name].push(cb);
+    return cb;
 	};
 	// @memberOf {Events} - deattach event
 	// @param {String} name - property of model
@@ -483,23 +951,22 @@ if(!('remove' in Element.prototype)){
 	Events.prototype.off = function(name, cb){
 		var handlers = this._handlers[name];
 		
-		if(Array.isArray(handlers)){
-			if(cb){
-				var pos = handlers.indexOf(cb);
-				pos != -1 && handlers.splice(pos, 1);
-
-				if(handlers.length == 0){
-					delete this._handlers[name];
-				}
-			}else{
-				handlers.length = 0;
-				delete this._handlers[name];
-			}
-		}
+		if(!Array.isArray(handlers)) return;
+                
+    if(cb){
+      var pos = handlers.indexOf(cb);
+      
+      if (pos != -1) handlers.splice(pos, 1);
+      if (handlers.length == 0) delete this._handlers[name];
+    }else{
+      handlers.length = 0;
+      delete this._handlers[name];
+    }
+        
 	};
 	// @memberOf {Events} - remove all event listeners
 	Events.prototype.destroy = function(){
-		this._handlers = Object.create(null);
+		this._init();
 	};
 	// @memberOf {Events} - attach callback on change
 	// @param {String} name - property of model
@@ -582,7 +1049,24 @@ if(!('remove' in Element.prototype)){
 		}
 		this.trigger('change', this);
 	};
-	Model.prototype.get = function(key, _default){
+  Model.prototype.get = function(key, _default){
+		if(!~key.indexOf('.')){
+      return this.attr.hasOwnProperty(key) ? this.attr[key] : _default;
+    }
+    let 	keys = key.split('.'),
+          i = -1, 
+          len = keys.length, 
+          ref = this.attr;
+        
+    while(i++, i < len){
+      ref = ref[keys[i]];
+      
+      if(ref == undefined) break;
+    }
+    return ref;
+	};
+ 
+	Model.prototype._get = function(key, _default){
 		return this.attr.hasOwnProperty(key) ? this.attr[key] : _default;
 	};
 	Model.prototype.has = function(key){
@@ -619,10 +1103,16 @@ if(!('remove' in Element.prototype)){
 		return out;
 	};
 	// @param {String:function} handlers_o
-	Model.prototype.listen = function(handlers_o){
-		for (key_s in handlers_o) {
-			this.on(key_s, handlers_o[key_s]);
+	Model.prototype.listen = function(handlers_o, withDestructor=false){
+		const handlers = {};
+    for (let key_s in handlers_o) {
+			handlers[key_s] = this.on(key_s, handlers_o[key_s]);
 		}
+    return withDestructor ? () => {
+      for (let key_s in handlers) {
+        this.off(key_s, handlers[key_s]);
+      }
+    } : null;
 	};
 }
 //==================================
@@ -2227,15 +2717,6 @@ if(ENV.DPROVIDER){
 		}) : '';
 	};
 	SHighlighter.prototype.prettify = function(str){
-		// Escape unicode characters
-		/*str = str.replace(/([\u0080-\u0400\u04FF-\uFFFF])/g, function(s){
-			var 	c = s.charCodeAt(0).toString(16), 
-					i = 4 - c.length; 
-
-			while(i-- > 0) c = '0' + c; 
-			return '\\u' + c;
-		});*/
-
 		return this.htmlspecialchars(str).replace(this.pattern, this.transformer);
 	};
 
@@ -2264,11 +2745,11 @@ if(ENV.DPROVIDER){
 				// '(?:(?=function\\s*)([\\w\\d\\-\\_\\$]+)(?=\\s*\\())|' + // a function name
 				'(function)(\\s*)([\\w\\d\\-\\_\\$]+)(\\s*\\()' + // a function name
 				// Attention `constructor` is not keyword
-	            "|(\\b(?:async|yield|await|try|catch|break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|typeof|instanceof|throw|import|export|from|super|class|extends|this|delete|default)\\b)" + // @keywords
+	            "|(\\b(?:async|yield|await|try|catch|break|continue|do|in|else|for|if|return|while|with|switch|case|var|function|new|const|let|typeof|instanceof|throw|import|export|from|super|class|extends|static|this|delete|default)\\b)" + // @keywords
 				"|(\\b(?:(?:[0-9]*\\.)?[0-9]+(?:[eE][-+]?[0-9]+)?)|(?:undefined|null|Infinity|NaN|true|false)\\b)|" + // a number 
 				//"(?:\\.([@\\w]+)(?=[(]))|" + // method chaining
 				//"(?:\\b([@\\w]+)(?=[(]))", // function execution
-	            "(?:([@\\w]+)(?=[(]))" // function execution
+	            "(?:([@\\w\\$]+)(?=[(]))" // function execution
 	            + '|(\{|\})' // @figBrackets
 	            , 
 			'g'),
@@ -3257,15 +3738,16 @@ if(ENV.DPROVIDER){
 		return s;
 	}
 	function _object2string(o) {
-		if (typeof(o) !== 'object' || !o || (typeof(o) === 'object' && o.constructor !== Object) ) {
-			if (typeof(o) == 'string') return '"' + escape(o + '') + '"';
-			return escape(o + ''); // "+" converts all types to string!
-		} else {
+		if (typeof(o) === 'object' && o &&
+			(o.constructor === Object || o.constructor === Map || o.constructor === Set)
+		) {
+			_console.dir(o);
 			let s = '<b>{</b>';
 			let descriptors = Object.getOwnPropertyDescriptors(o);
 			let value;
+			let property;
 			
-			for (let property in descriptors) {
+			for (property in descriptors) {
 				value = descriptors[property].value;
 				if (typeof(value) === 'object' && value.constructor === Object) {
 					s += '<p>' + escape(property) + ':</p>';
@@ -3275,9 +3757,22 @@ if(ENV.DPROVIDER){
 				}
 			}
 			
+			
+			if (o[Symbol.iterator]){
+				for (property of o[Symbol.iterator]()) 
+					s += '<p>' + _object2string(property) + '</p>';
+			}
+			
+			if (Object.getPrototypeOf(o)) {
+				s += '<p>prototype: ' + Object.getPrototypeOf(Object.create(o)).constructor.name + '</p>';
+			}
+			
 			s += '<b>}</b>';
 			
 			return s;
+		} else {
+			if (typeof(o) == 'string') return '"' + escape(o + '') + '"';
+			return escape(o + ''); // "+" converts all types to string!
 		}
 	}
 
@@ -3691,9 +4186,9 @@ if(ENV.DPROVIDER){
 
 	var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-	// Editor with syntax highlighting v185 2019/10/15
+	// Editor with syntax highlighting v196 2019/11/23
 	// (C) 2015-2020
-	var VER = 185;
+	var VER = 196;
 	var VOC = {
 		create_new_document: 'Create new document',
 		file_name: 'Document name:',
@@ -3908,6 +4403,18 @@ if(ENV.DPROVIDER){
 	
 				this.controls.grid.className = 'sc_layout-right grid_column ' + className;
 			},
+      'change:hp1': (value_n, m_o) => {
+        console.log('[change:hp1] %s', value_n);
+        console.dir(this.controls.half1);
+        this.controls.half1.style.flexGrow = Math.pow(2, value_n);
+      },
+      'change:vp1': (value_n, m_o) => {
+        console.log('[change:vp1] %s', value_n);
+        console.dir(this.controls.half1);
+        console.dir(value_n);
+        this.controls.space1.style.flexGrow = Math.pow(2, value_n);
+        this.controls.space2.style.flexGrow = Math.pow(2, value_n);
+      },
 		})
 	};
 	MainView.prototype.initProject = function(model){
@@ -3952,9 +4459,10 @@ if(ENV.DPROVIDER){
 					this.subView[id] && this.subView[id].remove();
 				}
 			},
-			'add': (documentModel/*, projectModel*/) => {
+			'add': (documentModel) => {
 				this.appendDocument(documentModel);
-			}
+			},
+      
 		});
 		// Attention: Quick and dirty method find next available document by <pre> node at DOM
 		this.bus.on('focus_next_doc', function(v){
@@ -4226,7 +4734,11 @@ if(ENV.DPROVIDER){
 		},
 		'onclick settingsBtn': function(e) {
 			var _self = this;
-
+			
+			let compile = DPROVIDER.require('ViewCompiler');
+			console.log('ViewCompiler');
+			console.dir(compile);
+                        
 			// todo this.stateModel
 			// TODO May be better to set popup title undefined
 			// TODO get settings from project settings block
@@ -4259,6 +4771,21 @@ if(ENV.DPROVIDER){
 							'<option value="2">&#9531;</option>' +
 							'<option value="3">&#9523;</option>' +
 						'</select>' +
+              // WATCHER! depends on select-grid 
+              '<div>'+
+                `<template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
+                  <label> Horizontal proportion: <input
+                    *model="hp1"
+                    type="number" min="-3" max="3" step="1" value="0"
+                  /></label>
+                </template>
+                <template *if="gridScheme" *equal="[7,11,15,23,27]">
+                  <label> Vertical proportion: <input
+                    *model="vp1"
+                    type="number" min="-3" max="3" step="1" value="0"
+                  /></label>
+                </template>` +
+              '</div>' +
 					'</div>' +
 					'<div class="control-list-item sc_article1">' +
 						'<span class="sc_toppanel_text">' + VOC.settingDialog_label_theme + '</span>' +
@@ -4298,18 +4825,24 @@ if(ENV.DPROVIDER){
 			}, {
 				model: this.stateModel,
 				onopen: function(){
-					console.log('[Setting POPUP open] %s', this.model.get('gridId'));
-					console.dir(JSON.stringify(this.model.attr));
-					console.dir(this);
-					console.dir(this.model.get('gridId'));
-
 					this.controls.selectGrid.value = this.model.get('gridId') || '7';
 					this.controls.selectTheme.value = this.model.get('themeId') || 'light';
+                                        
+          this._unbind = this.model.listen({
+            'change:gridScheme': (gridScheme_n, m_o) => {
+              if (gridScheme_n == 1 || gridScheme_n == 19) m_o.change('vp1', 0);
+              if (gridScheme_n == 1 || gridScheme_n == 3) m_o.change('hp1', 0);
+              console.log('SP gs: %s', gridScheme_n);
+            },
+          }, true);                              
+          this.scope = compile(this.controls.body, this.model);
 				},
 				onclose: function(){
 					console.log('[Setting POPUP close]');
 					console.dir(JSON.stringify(this.model.attr));
-					_self.$saveInitState(this.model.attr);
+          this.scope.destroy();
+          this._unbind();
+          _self.$saveInitState(this.model.attr);
 				},
 				// changeGrid() converts gridId to change:gridScheme  
 				changeGrid: function(gridId){
@@ -5128,7 +5661,7 @@ if(ENV.DPROVIDER){
 			gridScheme: 0 | 0x1,
 			themeId: 'light',
 		}, initStateData));
-	}else{startNewProject
+	}else{
 		// TODO add default stateModel!!!
 		// Local storage not available
 		App.startNewProject(QUERY_OPTIONS.project);

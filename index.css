@@ -1,4 +1,4 @@
-/*Compiled 2019-10-16:20:56:15*/
+/*Compiled 2019-11-24:19:33:25*/
 /* Normalize styles*/
 html{ height: 100%; font: 13px/15px Arial; }
 body{ margin: 0;height: 100%; }
@@ -210,7 +210,7 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 	/*border-left: 1px solid #ccc;*/
 }
 .sc_edit-pre:focus{
-	outline: 1px solid #333;
+	outline: 1px solid #d0d0d0;
 	outline-offset: 0px;
 }
 .sc_edit-header{
@@ -353,7 +353,10 @@ body, html{-webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
 .grid_cell{
 	position: relative;
 	flex: 1  1 auto;
+/*
+ * This property was commented for resizing feature
 	min-height: 50%;
+*/
 
 } 
 .grid_cell:empty:before{
