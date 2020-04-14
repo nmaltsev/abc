@@ -17,7 +17,10 @@ Abc supports code evolution like [Plunker](http://plnkr.co/) or [jsfiddle](https
 All projects can be exported to a separate file and imported to another device. It hasn't any backend yet.
 The current version of the application has partial support of markdown file format.
 
-
-To build a project, you must run the following command:
-`npm run build`
-The `static/app` folder will contain the executable application. 
+### Commands
+To build the project, you must run the following command:
+``` 
+$ npm run build
+$ npm run build:styles
+```
+The `static/app/build` folder will contain the executable application. 
