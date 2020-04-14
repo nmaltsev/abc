@@ -1,0 +1,3 @@
+html {font: 0.8rem/1rem Arial;}
+body {margin: 0;}
+input::-ms-clear {display: none;} 

@@ -1,0 +1,15 @@
+const KEY = {};
+KEY[(KEY[9] = 'TAB')] = 9;
+KEY[(KEY[13] = 'ENTER')] = 13;
+KEY[(KEY[37] = 'LEFT')] = 37;
+KEY[(KEY[66] = 'B')] = 66;
+KEY[(KEY[68] = 'D')] = 68;
+KEY[(KEY[71] = 'G')] = 71;
+KEY[(KEY[76] = 'L')] = 76;
+KEY[(KEY[79] = 'O')] = 79;
+KEY[(KEY[85] = 'U')] = 85;
+KEY[(KEY[89] = 'Y')] = 89;
+KEY[(KEY[90] = 'Z')] = 90;
+KEY[(KEY[191] = 'SLASH')] = 191;
+KEY[(KEY[222] = 'QUOTE')] = 222;
+module.exports = KEY;

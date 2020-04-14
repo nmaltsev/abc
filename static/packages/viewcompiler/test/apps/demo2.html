@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Demo1</title>
+    <link rel="stylesheet" type="text/css" href="reset.css"/>
+  </head>
+  <body>
+    <label><input type="checkbox" *model="toggle"/>Toggle</label>
+    <template *if="toggle" *equal="true">
+<!--
+      <div>
+-->
+      <p>Today: [[now|datePipe1]] {{typeSelect}}</p>
+      <select *model="typeSelect">
+        <option value="-1">Test</option>
+        <option value="[[menuItems.0.item]]">[[menuItems.0.label]]</option>
+        <option value="[[menuItems.1.item]]">[[menuItems.1.label]]</option>
+        <option value="[[menuItems.2.item]]">[[menuItems.2.label]]</option>
+      </select>
+      <p>{{typeSelect}}*{{typeSelect}} <a href="http://{{domain}}/{{typeSelect}}" target="_blank">link</a></p>
+      <label><input type="checkbox" *model="showMore"/>Show more</label>
+      <template *if="showMore" *equal="true" *alias="temp">
+        <p>This is more.</p> 
+        <input type="date" *model="newDate">
+        <p>{{newDate | datePipe1}}</p>
+      </template>
+<!--
+      </div>  
+-->
+    </template>
+    <script src="../viewcompiler.bundle.js"></script>
+    <script src="demo2.js"></script>
+  </body>
+</html>

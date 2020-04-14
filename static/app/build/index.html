@@ -1,0 +1,80 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet prefetch" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700,700i,800,800i">
+		<link rel="stylesheet" type="text/css" href="styles.bundle.css"/>
+		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+		<title>ABC</title>
+	</head>
+	<body>
+		<div class="sc_layout">
+			<div class="sc_layout-top __theme1" data-co="top">
+				<h2 class="sc_logo">ABC</h2>
+				<div class="sc_toppanel">
+					<input type="text" data-co="project-title" class="sc_toppanel_project-name" placeholder="Noname project" title="Project title"/>	
+					<div class="sc_toppanel_menu-label" data-co="toppanel-menu-label">
+						<span>Project</span>
+						<div class="sc_toppanel_menu-list" data-co="toppanel-menu-list" style="display:none;">
+							<button class="sc_toppanel_menu-item" data-co="export-project">Download Project</button>
+							<label class="sc_toppanel_menu-item">
+								<input type="file" data-co="import-project" class="sc_invisible"/><span>Import Project</span>
+							</label>
+							<button class="sc_toppanel_menu-item" data-co="clear-project">Clear</button>
+							<!-- In development -->
+							<!-- <button class="sc_toppanel_menu-item" data-co="save-project">Save</button> -->
+							<button class="sc_toppanel_menu-item" data-co="load-default-project">Load default project</button>
+							<button class="sc_toppanel_menu-item" data-co="load-test-project">Load test project</button>
+							<!-- <button class="sc_toppanel_menu-item" data-co="about-btn">About</button> -->
+						</div>
+					</div>
+					<button class="sc_toppanel_about sc_virtual-link __chromeless __white" data-co="about-btn">About</button>
+				</div>
+			</div>
+			<div class="sc_layout-mid">
+				<div class="sc_layout-tools" data-co="tools">
+					<button class="tool-btn" data-co="tools-add-btn"><svg class="svg-btn-container"><use xlink:href="#svg-add"></use></svg></button>
+					<button class="tool-btn" data-co="last-projects-btn">P</button>
+					<button class="tool-btn" data-co="toggle-list-btn">&lt;</button>
+					<button class="tool-btn" data-co="settings-btn">S</button>
+				</div>
+				<div class="sc_layout-left"><!--
+					--><div class="sc_documents-list" data-co="items"></div><!--
+					--><div class="sc_projects-list" data-co="projects" style="display:none;">TODO</div><!--
+				--></div>
+				<div class="sc_layout-right grid_column" data-co="grid">
+					<div class="grid_row grid_cell" data-co="half1">
+						<div class="grid_cell" data-co="space1"></div>
+						<div class="grid_cell" data-co="space3"></div>
+					</div>
+					<div class="grid_row grid_cell" data-co="half2">
+						<div class="grid_cell" data-co="space2"></div>
+						<div class="grid_cell" data-co="space4"></div>
+					</div>
+				</div>
+			</div>
+			<div class="sc_layout-foot" data-co="foot" style="display:none;"></div> <!-- is unused -->
+		</div>
+  <div id="node-heap"></div>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="svg-patterns">
+	<symbol id="svg-add" viewBox="0 0 100 100">
+		<g id="_x37_7_Essential_Icons">
+			<path id="Plus" d="M72,50c0,1.1-0.9,2-2,2H52v18c0,1.1-0.9,2-2,2s-2-0.9-2-2V52H30c-1.1,0-2-0.9-2-2c0-1.1,0.9-2,2-2h18V30c0-1.1,0.9-2,2-2s2,0.9,2,2v18h18C71.1,48,72,48.9,72,50z "></path>
+		</g>
+		<g id="Guides"></g>
+		<g id="Info">
+			<g id="BORDER">
+				<path fill="#0000FF" d="M1504-1210V474H-280v-1684H1504 M1512-1218H-288V482h1800V-1218L1512-1218z"></path>
+			</g>
+		</g>
+	</symbol>
+	<symbol id="svg-cancel" viewBox="0 0 100 100">
+		<g>
+			<path id="Cancel" d="M52.8,50l12.6-12.6c0.8-0.8,0.8-2,0-2.8c-0.8-0.8-2-0.8-2.8,0L50,47.2L37.4,34.6 c-0.8-0.8-2-0.8-2.8,0c-0.8,0.8-0.8,2,0,2.8L47.2,50L34.6,62.6c-0.8,0.8-0.8,2,0,2.8c0.8,0.8,2,0.8,2.8,0L50,52.8l12.6,12.6c0.8,0.8,2,0.8,2.8,0c0.8-0.8,0.8-2,0-2.8L52.8,50z"></path>
+		</g>
+	</symbol>
+</svg>
+<script src="index.bundle.js"></script>
+</body>
+</html>

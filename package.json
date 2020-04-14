@@ -1,0 +1,16 @@
+{
+  "name": "abc-project",
+  "version": "0.6.201",
+  "description": "ABC - online code editor",
+  "main": "index.js",
+  "scripts": {
+    "build:viewcompiler": "node static/packages/bundlepacker/bundle.js static/packages/viewcompiler/test/index.js > static/packages/viewcompiler/test/viewcompiler.bundle.js",
+    "build": "node static/packages/bundlepacker/bundle.js static/app/source/index.js > static/app/build/index.bundle.js",
+    "build:styles": "cat static/app/css/*.css > static/app/build/styles.bundle.css",
+    "pack": "rm dist/*;cat static/app/css/*.css > dist/styles.bundle.css;node static/packages/bundlepacker/bundle.js static/app/source/index.js > dist/index.bundle.js;cp static/app/buildindex.html dist;cp static/app/build/favicon.ico dist",
+    "pack:s": "./bin/pack.sh",
+    "zip": "zip -r sec4code.last.zip ."
+  },
+  "author": "N. Maltsev",
+  "license": "ISC"
+}

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../lib/backside.js"></script>
+<script>
+var m = new Backside.Model({
+	text: 'abc'
+});
+
+m.on('change:text', function(text, m){
+	console.log('[change:text] 1');
+});
+m.on('change:text', function(text, m){
+	console.log('[change:text] 2');
+});
+</script>
+</head></html>
