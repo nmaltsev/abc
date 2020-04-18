@@ -14,9 +14,9 @@
       <!-- For list tags (UL, OL) the template content which contains a few nested 
       tags will be wrapped in <li> tags -->
       <template *for="list" *each="item">
-          <li>
-            <label>[[item.value]] <button data-id="[[item.id]]">Delete</button></label>
-          </li>
+        <li>
+          <label>[[item.value]] <button data-id="[[item.id]]">Delete</button></label>
+        </li>
       </template>
     </ol>    
     <script src="../viewcompiler.bundle.js"></script>
