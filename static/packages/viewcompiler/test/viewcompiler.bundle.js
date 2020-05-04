@@ -52,11 +52,11 @@ Events.prototype._init = function(){
 /**
  * @memberOf Events - execute event callbacks
  * @param {Object} options - event options
- * @return {Bool} - an event propogation has been stopped
+ * @return {boolean} - an event propogation has been stopped
  */
 Events.prototype.trigger = function(){
 	var		args = Array.prototype.slice.call(arguments), 	
-			handlers = this._handlers[args.shift()];
+				handlers = this._handlers[args.shift()];
 
 	if(!Array.isArray(handlers)) return false;
 	let i = handlers.length;
@@ -81,7 +81,7 @@ Events.prototype.destroy = function(){
 
 /**
  * @memberOf {Events} - attach callback on change
- * @param {String} name - property of model
+ * @param {string} name - property of model
  * @param {Function} cb - callback
  */
 Events.prototype.on = function(name, cb){
@@ -94,7 +94,7 @@ Events.prototype.on = function(name, cb){
 
 /**
  * @memberOf {Events} - deattach event
- * @param {String} name - property of model
+ * @param {string} name - property of model
  * @param {Function} cb - callback
  */
 Events.prototype.off = function(name, cb){
@@ -122,7 +122,7 @@ Events.prototype.destroy = function(){
 
 /**
  * @memberOf {Events} - attach callback on change
- * @param {String} name - property of model
+ * @param {string} name - property of model
  * @param {Function} cb - callback
  * @return {Function} handler
  */
@@ -167,7 +167,7 @@ module.exports = {
 	 * $4.cr("option","value","email","textContent","Hello")
 	 * @param {...string[]}
 	 * @return {HTMLElement}
-	 */
+00	 */
 	cr: function(){
 		if (arguments.length == 0) throw("Don't set Tag name");
 
@@ -566,7 +566,7 @@ const LIT = {
 	$if: '*if',
 	$equal: '*equal',
 	$model: '*model',
-	$alias: '*alias',
+	$alias: '*ref',
 	$on: '*on',
 	$dispatch: '*dispatch',
 	$for: '*for',
@@ -660,14 +660,14 @@ class AttributeLeaf extends CleaningLeaf {
 	
       const propertyName = getModelPropertyName(textFragment);
       this.affectedProperties.push(
-	propertyName, 
-	this.$model.on('change:' + propertyName, () => {
-	  this.update();
-	})
+        propertyName, 
+        this.$model.on('change:' + propertyName, () => {
+          this.update();
+        })
       );
       // ?? maybe warp into a class instance
       this.aZones.push(() => {
-		return this.pipeCb(textFragment); 
+    		return this.pipeCb(textFragment); 
       });
     }
 }
@@ -837,8 +837,8 @@ class LoopWatcher {
     render(item, modelAlias) {
       const parentNodeTagName = this.$template.parentNode.tagName;
       const $target = cloneTemplate(
-	this.$template, 
-	(parentNodeTagName == 'OL' ||  parentNodeTagName == 'UL') ? 'li' : 'div'
+        this.$template, 
+        (parentNodeTagName == 'OL' ||  parentNodeTagName == 'UL') ? 'li' : 'div'
       );
       let subScope = compile($target, new Model({[modelAlias]: item}), this.pipes);
       this.subjects.push(subScope);
@@ -847,7 +847,7 @@ class LoopWatcher {
     cleanUp() {
       let i_n = this.subjects.length;
       while (i_n-- > 0) {
-	$4.removeNode(this.subjects[i_n].$target);
+      	$4.removeNode(this.subjects[i_n].$target);
         this.subjects[i_n].destroy(true);
       }
       this.subjects.length = 0;
@@ -856,7 +856,7 @@ class LoopWatcher {
     destroy(destroySelf=true) {
       this.cleanUp();
       if (destroySelf && this._onDestroy) {
-	this._onDestroy(this);
+      	this._onDestroy(this);
       }
     }
 
@@ -895,13 +895,13 @@ directiveMap.push(function($n){
     let changeHandler = $m.on('change:' + modelPropertyName_s, function(value, m_o) {
       if (
         Array.isArray(equalData)
-	  ? equalData.indexOf(value) !== -1
-	  : equalData === value
+          ? equalData.indexOf(value) !== -1
+          : equalData === value
       ) {
         // In case when the condition is true:
         // check whether the view has already been created
         if (!subScope.$target){
-	  subScope.$target = cloneTemplate($n);
+      	  subScope.$target = cloneTemplate($n);
           subScope.subjects.push(compile(subScope.$target, $m, _pipes));
         }
       } else if (subScope.$target){
@@ -982,8 +982,8 @@ directiveMap.push(function($n){
       });
       $n.addEventListener('input', inputHandler);
       subScope.onDestroy((_) => {
-          $m.off('change:' + modelAttr, changeHandler);
-          $n.removeEventListener('input', inputHandler);
+        $m.off('change:' + modelAttr, changeHandler);
+        $n.removeEventListener('input', inputHandler);
       });
       // Initial set
       if ($m.get(modelAttr)){
@@ -1023,17 +1023,17 @@ directiveMap.push(function($n){
     return subScope;
 });
 
-// #4 *alias="<alias name>"
-// Triggers 'init-alias:<alias name>' and 'remove-alias:<alias name>'
+// #4 *ref="<alias name>"
+// Triggers 'init-ref:<reference name>' and 'destroy-ref:<refernce name>'
 directiveMap.push(function($n){
     return $n.attributes[LIT.$alias] && $n.attributes[LIT.$alias].value;
 }, function($n, $m, pipes){	
     let subScope = new CleaningNode('*alias');
     let alias_s =$n.attributes[LIT.$alias].value;
 
-    $m.trigger('init-alias:' + alias_s, $n, $m);
+    $m.trigger('init-ref:' + alias_s, $n, $m);
     subScope.onDestroy((/*ws*/) => {
-      $m.trigger('remove-alias:' + alias_s, $n, $m);
+      $m.trigger('destroy-ref:' + alias_s, $n, $m);
     });
 
     return subScope;
@@ -1042,8 +1042,8 @@ directiveMap.push(function($n){
 
 // #3 *for="" *each=""
 directiveMap.push(function($n){
-    return $n.attributes[LIT.$for] && $n.attributes[LIT.$each]
-       && $n.attributes[LIT.$for].value && $n.attributes[LIT.$each].value;
+  return $n.attributes[LIT.$for] && $n.attributes[LIT.$each]
+      && $n.attributes[LIT.$for].value && $n.attributes[LIT.$each].value;
 }, function($n, $m, pipes){
     const modelAttr = $n.attributes[LIT.$for].value; // list
     const alias = $n.attributes[LIT.$each].value;
@@ -1052,7 +1052,7 @@ directiveMap.push(function($n){
 
     // TODO watch list
     let modelChangeHandler = $m.on('change:' + modelAttr, function(items, m_o) {
-      console.log('The list has changed');
+      console.log('The list changed');
       console.dir(items);
       console.dir(loopWatcher);
       // TODO fix

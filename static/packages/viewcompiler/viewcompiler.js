@@ -10,7 +10,7 @@ const LIT = {
 	$if: '*if',
 	$equal: '*equal',
 	$model: '*model',
-	$alias: '*alias',
+	$alias: '*ref',
 	$on: '*on',
 	$dispatch: '*dispatch',
 	$for: '*for',
@@ -467,17 +467,17 @@ directiveMap.push(function($n){
     return subScope;
 });
 
-// #4 *alias="<alias name>"
-// Triggers 'init-alias:<alias name>' and 'remove-alias:<alias name>'
+// #4 *ref="<alias name>"
+// Triggers 'init-ref:<reference name>' and 'destroy-ref:<refernce name>'
 directiveMap.push(function($n){
     return $n.attributes[LIT.$alias] && $n.attributes[LIT.$alias].value;
 }, function($n, $m, pipes){	
     let subScope = new CleaningNode('*alias');
     let alias_s =$n.attributes[LIT.$alias].value;
 
-    $m.trigger('init-alias:' + alias_s, $n, $m);
+    $m.trigger('init-ref:' + alias_s, $n, $m);
     subScope.onDestroy((/*ws*/) => {
-      $m.trigger('remove-alias:' + alias_s, $n, $m);
+      $m.trigger('destroy-ref:' + alias_s, $n, $m);
     });
 
     return subScope;

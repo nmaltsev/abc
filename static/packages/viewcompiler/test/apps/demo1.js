@@ -21,11 +21,11 @@ model.listen({
     console.log('Input');
     console.dir($input);
   },
-  'init-alias:line1': function($line){
+  'init-ref:line1': function($line){
     console.log('Init line');
     console.dir($line);
   },
-  'remove-alias:line1': function($line){
+  'destroy-ref:line1': function($line){
     console.log('Remove line');
     console.dir($line);
   },

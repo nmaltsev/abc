@@ -9,7 +9,7 @@
         <todo-list></todo-list>
         <template id="template-todo-list">
             <form *on="submit" *dispatch="onNewItem">
-                <input type="text" placeholder="A property name" *model="newValue" *alias="itemInput">
+                <input type="text" placeholder="A property name" *model="newValue" *ref="itemInput">
                 <button type="submit">Add</button>
             </form>
             <ol *on="click" *dispatch="onListClick">

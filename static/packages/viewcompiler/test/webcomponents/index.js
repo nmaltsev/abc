@@ -65,7 +65,7 @@ class TodoList extends HTMLElement {
         console.log('The list changed');
         console.dir(list);
       },
-      'init-alias:itemInput': ($input) => {
+      'init-ref:itemInput': ($input) => {
         $newItem = $input;
         setTimeout(function(){ $input.focus(); }, 500);
       },

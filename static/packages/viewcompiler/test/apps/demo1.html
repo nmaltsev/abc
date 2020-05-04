@@ -13,7 +13,7 @@
         *model="hp1"
         type="number" min="-3" max="3" step="1" value="0"
       /></label>
-      <p *alias="line1">Test [[text2]]</p>
+      <p *ref="line1">Test [[text2]]</p>
     </template>
     <template *property="type" *if="[3,4]">
       <label> Vertical proportion: <input
@@ -25,7 +25,7 @@
     <p>Hello [[text2]]! [[text3]]</p>
     <p>Hello {{text1}}! {{text4}}_</p>
     <form *on="submit" *dispatch="form-submit" >
-      <input type="text" *alias="form-input"/>
+      <input type="text" *ref="form-input"/>
       <button type="submit">Submit</button>
     </form>
     <script src="../viewcompiler.bundle.js"></script>

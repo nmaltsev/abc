@@ -8,9 +8,6 @@
   <body>
     <label><input type="checkbox" *model="toggle"/>Toggle</label>
     <template *if="toggle" *equal="true">
-<!--
-      <div>
--->
       <p>Today: [[now|datePipe1]] {{typeSelect}}</p>
       <select *model="typeSelect">
         <option value="-1">Test</option>
@@ -20,14 +17,11 @@
       </select>
       <p>{{typeSelect}}*{{typeSelect}} <a href="http://{{domain}}/{{typeSelect}}" target="_blank">link</a></p>
       <label><input type="checkbox" *model="showMore"/>Show more</label>
-      <template *if="showMore" *equal="true" *alias="temp">
+      <template *if="showMore" *equal="true" *ref="temp">
         <p>This is more.</p> 
         <input type="date" *model="newDate">
         <p>{{newDate | datePipe1}}</p>
       </template>
-<!--
-      </div>  
--->
     </template>
     <script src="../viewcompiler.bundle.js"></script>
     <script src="demo2.js"></script>

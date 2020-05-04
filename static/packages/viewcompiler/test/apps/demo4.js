@@ -33,7 +33,7 @@ const _unbind = model.listen({
     console.log('The list has changed');
     console.dir(list);
   },
-  'init-alias:itemInput': ($input) => {
+  'init-ref:itemInput': ($input) => {
     $newItem = $input;
     setTimeout(function(){ $input.focus(); }, 500);
   },

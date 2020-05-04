@@ -14,11 +14,11 @@ model.listen({
   'change:toggle': function(isToggled, m){
     console.log('[change:toggle] %s', isToggled);
   },
-  'init-alias:temp': function($node, m) {
+  'init-ref:temp': function($node, m) {
     console.log('[init-alias:temp]');
     console.dir($node);
   },
-  'remove-alias:temp': function($node, m) {
+  'destroy-ref:temp': function($node, m) {
     console.log('[remove-alias:temp]');
     console.dir($node);
   },
