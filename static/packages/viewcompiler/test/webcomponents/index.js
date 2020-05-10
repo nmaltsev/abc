@@ -16,7 +16,9 @@ class TodoList extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this.$root = this.shadowRoot || this;
-    const $template = document.all['template-todo-list'];
+    
+    const templateName = 'element-' + this.tagName.toLowerCase();
+    const $template = document.all[templateName];
     this.$root.appendChild($template.content.cloneNode(true));
   }
   
@@ -52,7 +54,7 @@ class TodoList extends HTMLElement {
     
     let $newItem;
     this._unbindModel = model.listen({
-      'onNewItem': (e, m_o) => {
+      onNewItem: (e, m_o) => {
         e.preventDefault();
         const value = m_o.get('newValue');
 
@@ -69,11 +71,17 @@ class TodoList extends HTMLElement {
         $newItem = $input;
         setTimeout(function(){ $input.focus(); }, 500);
       },
-      'onListClick': (e, m_o) => {
+      onListClick: (e, m_o) => {
         if (e.target.tagName != 'BUTTON' || !e.target.dataset.id) return;
         let deleteId = e.target.dataset.id;
         m_o.change('list', m_o.get('list').filter(item => item.id !== deleteId));
       },
+      draftInput: (e) => {
+        console.log('[Input %s]', e.target.value);
+      },
+      draftChange: (e) => {
+        console.log('[Change %s]', e.target.value);
+      }
     });
 
     this._cleaningTree = viewcompiler(this.$root, model);

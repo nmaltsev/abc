@@ -1,5 +1,5 @@
 //==================================
-// View compiler (v. 16) 2019-2020
+// View compiler (v. 17) 2019-2020
 //==================================
 const $4 = require('../$4/index');
 const Model = require('../backside/model');
@@ -11,8 +11,6 @@ const LIT = {
 	$equal: '*equal',
 	$model: '*model',
 	$alias: '*ref',
-	$on: '*on',
-	$dispatch: '*dispatch',
 	$for: '*for',
 	$each: '*each',
 };
@@ -115,6 +113,23 @@ class AttributeLeaf extends CleaningLeaf {
       });
     }
 }
+
+class EventLeaf {
+  constructor (id, $node) {
+	  this.id = id;
+	  this.events = [];
+	  this.$target = $node;
+	}
+  
+  destroy() {
+    for(i = 0; i < this.events.length; i += 2) {
+      this.$target.removeEventListener(this.events[i], this.events[i+1]);
+    }
+    this.events.length = 0;
+    this.$target = null;
+  }
+}
+
 
 /**
 * @param {string} pattern_s
@@ -246,13 +261,13 @@ function attributeInterpolation($attr, $model, pipes){
 * @param {string} [childTagName_s] = 'div'
 * @return {HTMLElement} $target
 */      
-function cloneTemplate($template, childTagName_s = 'div') {
+function cloneTemplate($template, childTagName_s = 'div', force=false) {
     // If <template> contains only one node the app should insert it directly
     const $cloneNode = document.importNode($template.content, true);
     let $temp;
     let $target;
     
-    if ($cloneNode.children.length === 1) {
+    if ($cloneNode.children.length === 1 && !force) {
       $temp = $cloneNode;
       // Attention: next command must be executed before element will be inserted in DOM, because $temp is HtmlDocumentFragment 
       $target = $temp.children[0];
@@ -265,6 +280,7 @@ function cloneTemplate($template, childTagName_s = 'div') {
 }
 
 class LoopWatcher {
+  
     constructor ($template, $model, pipes) {
       this.$template = $template;
       this.model = $model;
@@ -277,12 +293,18 @@ class LoopWatcher {
     onDestroy(destructor) {
        this._onDestroy = destructor;
     }
+    
+    static LIST_TAGS = 'OL,UL'.split(',') 
 
     render(item, modelAlias) {
       const parentNodeTagName = this.$template.parentNode.tagName;
       const $target = cloneTemplate(
         this.$template, 
-        (parentNodeTagName == 'OL' ||  parentNodeTagName == 'UL') ? 'li' : 'div'
+        // When the internal content does not have any root element the compiler automatically wraps the nodes in these root nodes
+        LoopWatcher.LIST_TAGS.includes(parentNodeTagName) ? 'li' : 'div',
+        // If the content must be a list (wrapped with <UL> or <OL> tags)
+        // and contain a single element that is not a <LI> tag, the content element will be wrapped with the <LI>tag
+        this.$template.content.children.length === 1 && !LoopWatcher.LIST_TAGS.includes(this.$template.content.children[0].tagName)
       );
       let subScope = compile($target, new Model({[modelAlias]: item}), this.pipes);
       this.subjects.push(subScope);
@@ -447,23 +469,27 @@ directiveMap.push(function($n){
 
     return subScope;
 });
-// #3 *on="" *dispatch=""
-directiveMap.push(function($n){
-    return $n.attributes[LIT.$on] && $n.attributes[LIT.$dispatch]
-      && $n.attributes[LIT.$on].value && $n.attributes[LIT.$dispatch].value;
-}, function($n, $m){	
-    let subScope = new CleaningNode('*on');
-    // Binding DOM events with Model events
-    let DOMEventName_s = $n.attributes[LIT.$on].value;
-    let ModelDispatcherName_s = $n.attributes[LIT.$dispatch].value;
-    let DOMEventHandler_f = function(e){
-      $m.trigger(ModelDispatcherName_s, e, $m);
-    }
 
-    $n.addEventListener(DOMEventName_s, DOMEventHandler_f);
-    subScope.onDestroy((/*ws*/) => {
-      $n.removeEventListener(DOMEventName_s, DOMEventHandler_f);
-    });
+// #3 *on-<EVENT NAME>="<HANDLER>"
+directiveMap.push(function($n){
+    let i_n = $n.attributes.length;
+    while (i_n--> 0) if ($n.attributes[i_n].name.includes('*on-')) return true;
+    return false;
+}, function($n, $m){	
+    const subScope = new EventLeaf('*on', $n);
+    let i_n = $n.attributes.length;
+    let attr;
+    while (i_n--> 0) {
+      attr = $n.attributes[i_n];
+      if (!attr.name.includes('*on-')) continue;
+      let DOMEventName_s = attr.name.substr(4);
+      let ModelDispatcherName_s = attr.value;
+      let DOMEventHandler_f = function(e){
+        $m.trigger(ModelDispatcherName_s, e, $m);
+      };
+      $n.addEventListener(DOMEventName_s, DOMEventHandler_f);
+      subScope.events.push(DOMEventName_s, DOMEventHandler_f);
+    }
     return subScope;
 });
 

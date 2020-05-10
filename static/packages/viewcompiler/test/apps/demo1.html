@@ -24,7 +24,7 @@
     </template>
     <p>Hello [[text2]]! [[text3]]</p>
     <p>Hello {{text1}}! {{text4}}_</p>
-    <form *on="submit" *dispatch="form-submit" >
+    <form *on-submit="form-submit" >
       <input type="text" *ref="form-input"/>
       <button type="submit">Submit</button>
     </form>

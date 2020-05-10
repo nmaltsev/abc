@@ -7,16 +7,27 @@
     </head>
     <body>
         <todo-list></todo-list>
-        <template id="template-todo-list">
-            <form *on="submit" *dispatch="onNewItem">
-                <input type="text" placeholder="A property name" *model="newValue" *ref="itemInput">
+        <template id="element-todo-list">
+            <form *on-submit="onNewItem">
+                <input 
+                    type="text" 
+                    placeholder="A property name" 
+                    *model="newValue" 
+                    *ref="itemInput"
+                    *on-input="draftInput"
+                    *on-change="draftChange"
+                >
                 <button type="submit">Add</button>
             </form>
-            <ol *on="click" *dispatch="onListClick">
+            <ol *on-click="onListClick">
                 <template *for="list" *each="item">
+<!--
                     <li>
+-->
                         <label>[[item.value]] <button data-id="[[item.id]]">Delete</button></label>
+<!--
                     </li>
+-->
                 </template>
             </ol>
         </template>
