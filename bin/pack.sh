@@ -4,7 +4,7 @@ CSS_STYLE=$DIST_PATH"styles.bundle.css"
 
 rm dist/*
 cat static/app/css/*.css > $CSS_STYLE
-node static/packages/bundlepacker/bundle.js static/app/source/index.js > $JS_SCRIPT
+node static/packages/bundlepacker/bundle.js -i static/app/source/index.js -o $JS_SCRIPT -r report.json
 cp static/app/build/index.html $DIST_PATH
 cp static/app/build/favicon.ico $DIST_PATH
 

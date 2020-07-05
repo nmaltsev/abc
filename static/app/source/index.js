@@ -1,10 +1,11 @@
-const MainView = require('MainView');
-const DocumentModel = require('DocumentModel');
-const ProjectModel = require('ProjectModel');
-const Configs = require('Configs');
-const createDefaultProject = require('defaultProject');
-const createTestProject = require('testProject');
+const MainView = require('./MainView');
+const DocumentModel = require('./DocumentModel');
+const ProjectModel = require('./ProjectModel');
+const Configs = require('./Configs');
+const createDefaultProject = require('./defaultProject');
+const createTestProject = require('./testProject');
 const BacksideUtils = require('../../packages/backside/utils'); 
+
 
 // Attention: If url contains `?project=` application make attempt to download data from server
 var 	QUERY_OPTIONS = BacksideUtils.parseQuery(),
@@ -51,37 +52,48 @@ App.bus.on('start_new_project', function(app, foregroundId){
   }, 200);
 });	
 
+
+if (!LOCALSTORAGE_AVAILABLE) {
+  App.startNewProject();
+}
+
+const initStateData = BacksideUtils.saveParse(window.localStorage.getItem('statesnapshot')) || {};
+const stateData = Object.assign({ // Merge in default settings
+  showProjectList: false,
+  hideListPanel: false,
+  gridId: '7',
+  gridScheme: 0 | 0x1,
+  themeId: 'light',
+}, initStateData);
+
 if (QUERY_OPTIONS.project) {
-  App.startNewProject(QUERY_OPTIONS.project);
+  if (App.model) {
+    console.warn('Model is already defined');
+    return;
+  }
+  ProjectModel.load(QUERY_OPTIONS.project).then(resp => {
+    const docs = resp.data.model.docs;
+    
+    if (App.model) App.model.destroy();
+    const 	projectModel = new ProjectModel(resp.data.model);
+    App.initProject(projectModel, stateData);
+  }, error => {
+    console.warn('Impossible to load %s', QUERY_OPTIONS.project);
+  });
 } else if (	
-  LOCALSTORAGE_AVAILABLE &&
   (prevPrjData = BacksideUtils.saveParse(window.localStorage.getItem('lastsnapshot')))
 ) {
   if (App.model) App.model.destroy(); // Trigger destroy event
 
   const 	projectModel = new ProjectModel(Object.assign({ // Merge in default settings
-      title: '',
-      opened_ids: Array(4), // открытые документы
-      current_doc: 0, // id of current focused doc
-      docs: {}
-    }, prevPrjData.model));
-    
-  let id;
-  for(id in prevPrjData.model.docs){
-    projectModel._add(new DocumentModel(prevPrjData.model.docs[id]), id);
-  }
+    title: '',
+    opened_ids: Array(4), // already opened documents
+    current_doc: 0, // id of current focused doc
+    docs: {},
+    counter: 0
+  }, prevPrjData.model));
 
-  projectModel._counter = prevPrjData._counter;
-  
-  let initStateData = BacksideUtils.saveParse(window.localStorage.getItem('statesnapshot')) || {};
-
-  App.initProject(projectModel, Object.assign({ // Merge in default settings
-    showProjectList: false,
-    hideListPanel: false,
-    gridId: '7',
-    gridScheme: 0 | 0x1,
-    themeId: 'light',
-  }, initStateData));
+  App.initProject(projectModel, stateData);
 } else {
   App.startNewProject();
 }

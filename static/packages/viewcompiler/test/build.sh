@@ -1,1 +1,1 @@
-node ../../bundlepacker/bundle.js index.js > viewcompiler.bundle.js
+node ../../bundlepacker/bundler.js -i index.js -o viewcompiler.bundle.js -r report.json

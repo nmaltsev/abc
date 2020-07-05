@@ -1,4 +1,4 @@
-let Enum = require('enum');
+let Enum = require('./enum');
 let colors = Enum('red', 'green', 'blue');
 let keys = Enum({
 	Enter: 27,

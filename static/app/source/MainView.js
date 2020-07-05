@@ -23,11 +23,11 @@ const createRenameDocPopup = require('renameDocument.popup');
 const createDocumentPopup = require('createDocument.popup');
 const createSettingsPopup = require('settings.popup');
 
-var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
+const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
 // Code editor with syntax highlighting v201 2019/12/01
 // (C) 2015-2020
-var VER = 201;
+const VER = 202;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      
@@ -41,10 +41,10 @@ class MainView extends BacksideView {
   constructor(conf, $getInitState, $saveInitState) {
     super(conf);
     this.subView = Object.create(null);
-		this.bus = new BacksideEvents();
-		this.listItems = {};
-		this.$getInitState = $getInitState;
-		this.$saveInitState = $saveInitState;
+    this.bus = new BacksideEvents();
+    this.listItems = {};
+    this.$getInitState = $getInitState;
+    this.$saveInitState = $saveInitState;
   }
   
   initialize(conf) {
@@ -114,39 +114,47 @@ class MainView extends BacksideView {
 		});
   }
   
+  /**
+   * @param {ProjectModel} model
+   * @return {void}
+   */
   initProject(model) {
 	this.model = model;
 	this.model.listen({
-		'change:current_doc': (id) => {
-			if (!this.subView[id]) return;
-			
-		  this.openTab(id);
-		  // Focusing an HtmlEditor if a view has an editor 
-		  this._stayFocusOnDoc(id);
-		},
-		'change:gridId': (gridId) => {
-			this.changeGrid(gridId);
-		},
-		'change:opened_ids': (openedIds) => {
-			for(var i = 0; i < openedIds.length; i++){
-				openedIds[i] !== null && this.openTab(openedIds[i], 1 << i); // 1<<0 == 1, 1<<1 == 2 
-			}
-		},
-		'destroy': () => {
-			$4.emptyNode(this.controls.items);
-			var 	id,
-						docs = this.model.get('docs');
-			
-			for(id in docs) {
-				docs[id].destroy();
-			}
-			for(id in this.subView) {
-				if (this.subView[id]) this.subView[id].remove();
-			}
-		},
-		'add': (documentModel) => {
-			this.appendDocument(documentModel);
-		},
+	  'change:current_doc': (id) => {
+	    if (!this.subView[id]) return;
+		  
+	    this.openTab(id);
+	    // Focusing an HtmlEditor if a view has an editor 
+	    this._stayFocusOnDoc(id);
+	  },
+	  'change:gridId': (gridId) => {
+	    this.changeGrid(gridId);
+	  },
+	  'change:opened_ids': (openedIds) => {
+	    for(var i = 0; i < openedIds.length; i++){
+	      openedIds[i] !== null && this.openTab(openedIds[i], 1 << i); // 1<<0 == 1, 1<<1 == 2 
+	    }
+	  },
+	  'destroy': () => {
+	    $4.emptyNode(this.controls.items);
+	    var 	id,
+				    docs = this.model.get('docs');
+	    
+	    for(id in docs) {
+		    docs[id].destroy();
+	    }
+	    for(id in this.subView) {
+		    if (this.subView[id]) this.subView[id].remove();
+	    }
+	  },
+	  'add': (documentModel) => {
+	    this.appendDocument(documentModel);
+	  },
+	  'change:remoteDocId': (remoteDocId) => {
+	    console.log('[change:remoteDocId] %s', remoteDocId);
+	    window.history.pushState({remoteDocId}, 'Project', '?project=' + encodeURIComponent(remoteDocId));
+	  },
 	});
 	// Attention: Quick and dirty method to find the next available document by <pre> node at DOM
 	this.bus.on('focus_next_doc', function(v){
@@ -190,12 +198,12 @@ class MainView extends BacksideView {
     this._stayFocusOnDoc(this.model.get('current_doc'));
     this.controls.projectTitle.value = this.model.get('title') || 'noname';
 
-		CtxMenu2({
-			label: this.controls.toppanelMenuLabel,
-			menu: this.controls.toppanelMenuList,
-			active_cls: '__active',
-		});
-	}
+      CtxMenu2({
+	label: this.controls.toppanelMenuLabel,
+	menu: this.controls.toppanelMenuList,
+	active_cls: '__active',
+      });
+    }
 
   /**
    * @param {string} id - a document id
@@ -334,13 +342,13 @@ class MainView extends BacksideView {
     });
 	}
   
-	// @param {String|null} foregroundId - id of the opened project
-	startNewProject(foregroundId) {
-		if(this.model) this.model.destroy(); // Trigger destroy event
+  // @param {string} [foregroundId] - id of the opened project
+  startNewProject(foregroundId) {
+    if(this.model) this.model.destroy(); // Trigger destroy event
 
-		this.initProject(ProjectModel.createEmpty());
-		this.bus.trigger('start_new_project', this, foregroundId);
-	}
+    this.initProject(ProjectModel.createEmpty());
+    this.bus.trigger('start_new_project', this, foregroundId);
+  }
   
  	renderMenuItem(conf) {
 		var 	div = document.createElement('div'),
@@ -489,15 +497,8 @@ MainView.prototype.events = {
     let fr = new FileReader();
 
     fr.onload = function(e){      
-      var 	prj = JSON.parse(e.target.result);
-      var 	projectModel = new ProjectModel(prj.model),
-	          id;
-
-      for(id in prj.model.docs){
-        projectModel._add(new DocumentModel(prj.model.docs[id]), id);
-      }
-
-      projectModel._counter = prj._counter;
+      const prj = JSON.parse(e.target.result);
+      const projectModel = new ProjectModel(prj.model);
 
       if(this.model) this.model.destroy(); // Trigger destroy event
       this.initProject(projectModel);
@@ -527,6 +528,10 @@ MainView.prototype.events = {
   },
   'onclick aboutBtn': function(e){
     this.openAboutPopup();
+  },
+  'onclick uploadProject': function(e) {
+    if (!this.model) return;
+    this.model.save();
   },
 };
 

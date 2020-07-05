@@ -1,9 +1,18 @@
-## Usage
-- `node bundle.js enum.js enum_test.js > final.js`
-- `node bundle.js index.js`
+A lightweight zero-configured bundle compiler
 
+## How to compile the bundle:
+- `node bundle.js -i enum.js -a enum_test.js -o final.js`
+- `node bundle.js -i index.js -o index.bundle.js`
 
-### Use case: list of scripts
+## Cptions
+
+- `-i <index file path>` - the bundle entry point,
+- `-a <attached file path>` - an additional file to be included in the bundle,
+- `-b <local repository path>` - redefined path to the local repository,
+- `-r <report file path>` - all compilation errors will be saved in this file,
+- `-o <output file path>` - path to the compiled bundle file,
+
+### Basic example
 
 script.js
 ```
@@ -19,11 +28,11 @@ console.log(properties);
 ```
 Commands:
 ```
-node bundle.js index.js > out.bundle.js
+node bundle.js -i index.js -o out.bundle.js
 node out.bundle.js
 ```
 
+### Example with local repository
 
-### Use case: a single point of entry
+To compile bundle with an overrided local repository folder: `node bundle.js -i index.js -b ./modules -o result.js`  
 
-The command: `node bundle.js index.js`

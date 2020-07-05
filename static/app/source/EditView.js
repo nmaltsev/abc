@@ -112,79 +112,80 @@ class EditView extends BacksideView {
 				}
 				return out;
 			}
-			this.htmlEdit.el.onmousedown = function(e){
-				var $target = e.target;
+  this.htmlEdit.el.onmousedown = function(e){
+    var $target = e.target;
 
-        // TODO refactor code
-				if($target.classList.contains('sh-js_brackets')){ // Hide block
-					e.preventDefault();
-					e.stopPropagation();
+// TODO refactor code
+    if($target.classList.contains('sh-js_brackets')){ // Hide block
+      e.preventDefault();
+      e.stopPropagation();
 
-					let 	isOpen = $target.textContent == '{',
-                content = this.model.get('content'),
-                posData = this.htmlEdit.getSelection(),
-                curPos = posData.end;
+      let 	isOpen = $target.textContent == '{',
+		content = this.model.get('content'),
+		posData = this.htmlEdit.getSelection(),
+		curPos = posData.end;
 					let 	startPos,
-                targetPos = this.htmlEdit.getElementPos($target),
-                endPos,
-                blockCode;
+		targetPos = this.htmlEdit.getElementPos($target),
+		endPos,
+		blockCode;
 
-					if (isOpen) {
-						startPos = targetPos;
-						endPos = findCloseBracket(content, startPos);
-						startPos++;
-						endPos--;
-					}else{
-						endPos = targetPos;
-						startPos = findOpenBracket(content, endPos + 1);
-						startPos++;
-					}
+      if (isOpen) {
+	      startPos = targetPos;
+	      endPos = findCloseBracket(content, startPos);
+	      startPos++;
+	      endPos--;
+      }else{
+	      endPos = targetPos;
+	      startPos = findOpenBracket(content, endPos + 1);
+	      startPos++;
+      }
 
-					blockCode = content.substring(startPos, endPos); 
-					this.model._hiddenLinePattern.lastIndex = 0;
-					
-					if (this.model._hiddenLinePattern.test(blockCode)) {
-						return ;
-					} 
+      blockCode = content.substring(startPos, endPos); 
+      this.model._hiddenLinePattern.lastIndex = 0;
+      
+      if (this.model._hiddenLinePattern.test(blockCode)) {
+	      return ;
+      } 
 
-					content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos);
+      content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos);
 
-					if(curPos > startPos){
-						if(curPos <= endPos){ // Cursor in hidden block
-							curPos = startPos + 13;
-						}else{ // Cursor was after hidden block
-							curPos -= blockCode.length - 12; 
-						}
-					} 
+      if(curPos > startPos){
+	      if(curPos <= endPos){ // Cursor in hidden block
+		      curPos = startPos + 13;
+	      }else{ // Cursor was after hidden block
+		      curPos -= blockCode.length - 12; 
+	      }
+      } 
 
-					posData.sel.removeAllRanges();
-					this.htmlEdit.setText(content)
-					posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
+      posData.sel.removeAllRanges();
+      this.htmlEdit.setText(content)
+      posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
 
-				}else if($target.classList.contains('sh-codeblock')){
-					e.preventDefault();
-					e.stopPropagation();
-					var 	codeBlockId = $target.dataset.id,
-                blocks = this.model.get('blocks');
-                codeBlock = blocks[codeBlockId],
-                content = this.model.get('content'),
-                posData = this.htmlEdit.getSelection(),
-                curPos = posData.end,
-                codeBlockSpace = '%b' + codeBlockId + 'b%',
-                blockSpacePos = this.htmlEdit.getElementPos($target);
+  }else if($target.classList.contains('sh-codeblock')){
+      e.preventDefault();
+      e.stopPropagation();
+      let codeBlockId = $target.dataset.id;
+      let blocks = this.model.get('blocks');
+
+      let codeBlock = blocks[codeBlockId],
+	  content = this.model.get('content'),
+	  posData = this.htmlEdit.getSelection(),
+	  curPos = posData.end,
+	  codeBlockSpace = '%b' + codeBlockId + 'b%',
+	  blockSpacePos = this.htmlEdit.getElementPos($target);
 							
 
-					content = content.replace(codeBlockSpace, codeBlock);
-					blocks[codeBlockId] = null;
-					delete blocks[codeBlockId];
+  content = content.replace(codeBlockSpace, codeBlock);
+  blocks[codeBlockId] = null;
+  delete blocks[codeBlockId];
 
-					if(curPos > blockSpacePos){
-						curPos += codeBlock.length - codeBlockSpace.length; 
-					}
+  if(curPos > blockSpacePos){
+	curPos += codeBlock.length - codeBlockSpace.length; 
+  }
 
-					posData.sel.removeAllRanges();
-					this.htmlEdit.setText(content);
-					posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
+  posData.sel.removeAllRanges();
+  this.htmlEdit.setText(content);
+  posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
 				}
 			}.bind(this);
 			// Need to restore blocks at copying blocks
@@ -229,7 +230,7 @@ class EditView extends BacksideView {
             _clear1,
             _clear2;
 
-			if (!_C) { // Commet by line
+			if (!_C) { // Comment by line
 				_clear1 = new RegExp('^' + _OE, 'g');
 				_clear2 = new RegExp('\n' + _OE, 'g');
 				this.htmlEdit._hooks.CTRL_SLASH = function(fragment){

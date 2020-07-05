@@ -2,12 +2,21 @@ const $fs = require('fs');
 const $path = require('path');
 
 function readText(path_s, withPath=false) {
-	return new Promise(function(res, rej){
-		$fs.readFile(path_s, function(err, data){
-			if (err) rej(err);
-			else res(!withPath ? data.toString() : [data.toString(), path_s]);
-		});
-	});
+  return new Promise(function(res, rej){
+    $fs.readFile(path_s, function(err, data){
+      if (err) rej(err);
+      else res(!withPath ? data.toString() : [data.toString(), path_s]);
+    });
+  });
+}
+
+function writeText(path_s, text_s) {
+  return new Promise(function(res, rej){
+    $fs.writeFile(path_s, text_s, function(err, data){
+      if (err) rej(err);
+      else res();
+    });
+  });
 }
 
 /**
@@ -119,6 +128,34 @@ function strictReplace(str_s, pattern_s, value_s) {
   return str_s.substring(0, pos_n) + value_s + str_s.substring(pos_n + pattern_s.length);
 }
 
+/**
+ * for grouping an argument list `"test" -i "./path" -a "./path1" -a 2 -o "./path3" -r "./path4" -v`
+ * @param {string[]} args
+ * @return {{[string]:string[]}} arg2keys
+ */
+function groupArguments(args) {
+  let arg2keys = {};
+  let key_s, curKey_s;
+  for(let i = 0; i < args.length; i++) {
+    if (args[i].charAt(0) === '-') {
+      key_s = args[i].substring(1);
+      if (!Array.isArray(arg2keys[key_s])) arg2keys[key_s] = [];
+    } else {
+      curKey_s = key_s || 'default';
+      if (!Array.isArray(arg2keys[curKey_s])) {
+	arg2keys[curKey_s] = [];
+      }
+      arg2keys[curKey_s].push(args[i]);
+    }
+  }
+  return arg2keys;
+}
+
+function head(list) {
+  if (!Array.isArray(list)) return null;
+  return list[0];
+}
+
 module.exports = {
   strictReplace,
   getBasePath,
@@ -126,5 +163,8 @@ module.exports = {
   getDir,
   catchDependencies,
   normalizePath,
-  escapePath
+  escapePath,
+  groupArguments,
+  head,
+  writeText,
 };

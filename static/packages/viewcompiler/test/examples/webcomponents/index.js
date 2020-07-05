@@ -40,6 +40,8 @@ class TodoList extends HTMLElement {
     console.log('[attributeChangedCallback]');
   }
   
+  publicMethod() {}
+  
   adoptedCallback() {
     console.log('[adoptedCallback]');
   }

@@ -1,20 +1,38 @@
-const Request = require('../lib/xhr');
-const DocumentModel = require('DocumentModel');
+const DocumentModel = require('./DocumentModel');
 const BacksideModel = require('../../packages/backside/model');
+const AxiosInstances = require('./instances.axios');
+
+const PROP_RDOCID = 'remoteDocId';
+const PROP_COUNTER = 'counter';
+const PROP_OPENED = 'opened_ids';
+const PROP_DOCS = 'docs';
 
 class ProjectModel extends BacksideModel {
-  
+  /**
+   * @param {Object} conf
+   * @param {string[]} conf.opened_ids
+   * @param {number} conf.counter
+   * @param {string} conf.remoteRefId
+   */
   constructor(conf) {
     super(conf);
-    if (!conf.opened_ids) model.set('opened_ids', []);
+    if (!Array.isArray(conf[PROP_OPENED])) this.set(PROP_OPENED, []);
+    const docs = this.get(PROP_DOCS);
+    const maxIndex = Math.max.apply(null, Object.keys(docs).map(num => parseInt(num, 10))) + 1;
+    this.set(PROP_COUNTER, maxIndex);
+    
+    if (!conf.hasOwnProperty(PROP_RDOCID)) this.set(PROP_RDOCID, 0);
 		this.docIDMap = {};
-		this._counter = 0;
+		
+		for(let id in docs){
+			this._add(new DocumentModel(docs[id]), id);
+		}
   }
   
   _add(model, id) {
-		var 	id = id || this._counter++ + '';
+		var 	id = id || this.attr[PROP_COUNTER]++ + '';
 
-		this.attr.docs[id] = model;
+		this.attr[PROP_DOCS][id] = model;
 		model.set('id', id);
 		this.docIDMap[model.get('title')] = id;
 		this.trigger('add', model, this);
@@ -27,27 +45,23 @@ class ProjectModel extends BacksideModel {
 			this._add(list[i]);
 		}
 	}
+	
+	_markSpaceAsClosed(docId) {
+		var pos = this.attr[PROP_OPENED].indexOf(docId);
+		if (pos < 0) return;
+		this.attr[PROP_OPENED][pos] = null;
+	}
   
 	spaceChange(spaceId, docId){
-		if(Array.isArray(this.attr.opened_ids)){
-			var pos = this.attr.opened_ids.indexOf(docId);
-			
-			if(pos != -1){
-				// this.attr.opened_ids.splice(pos, 1);
-				this.attr.opened_ids[pos] = null;
-			}
-			
-			this.attr.opened_ids[spaceId] = docId;
+		if (Array.isArray(this.attr[PROP_OPENED])) {
+			this._markSpaceAsClosed(docId);
+			this.attr[PROP_OPENED][spaceId] = docId;
 		}
 		this.trigger('spaceChange');
 	}
   
 	closeSpace(docId){
-		var pos = this.attr.opened_ids.indexOf(docId);
-
-		if(pos != -1){
-			this.attr.opened_ids[pos] = null;
-		}
+		this._markSpaceAsClosed(docId);
 		this.trigger('spaceChange');
 	}
 	
@@ -56,16 +70,14 @@ class ProjectModel extends BacksideModel {
     let id;
 		let prj = {
 			model: {
-				docs: {},	
+				[PROP_DOCS]: {},	
 			},
-			_counter: this._counter,
 		};
 
-		this.export(['current_doc', 'opened_ids', 'title', 'blocks'], prj.model);
+		this.export(ProjectModel.EXPORTED_PROPERTIES, prj.model);
 
 		for(id in docs){
-			// todo ovveride export() method
-			prj.model.docs[id] = docs[id].export(DocumentModel._exportedProperties);
+			prj.model[PROP_DOCS][id] = docs[id].export(DocumentModel._exportedProperties);
 		}
     
 		return prj;
@@ -73,58 +85,39 @@ class ProjectModel extends BacksideModel {
 	
 	static createEmpty(){
 		return new ProjectModel({
+			[PROP_RDOCID]: null,
+			[PROP_COUNTER]: 0,
 			title: '',
 			gridId: '7', // the layout grid
-			opened_ids: Array(4), // Opened documents
+			[PROP_OPENED]: Array(4), // Opened documents
 			current_doc: 0, // id of the focused doc
-			docs: {}
+			[PROP_DOCS]: {}
 		});
 	}	
 
-	// @todo
-	static save(){
-		/*
-     * var 	hash = $MD.MD5(JSON.stringify(this.attr));
-		var 	data = $m.clone(this.attr),
-				i = data.docs.length;
-
-		data.key = hash;
-
-		// console.log('[CALL save model]');
-		// console.log('MD5 %s', hash);
-		// console.dir(data);
-
-		new Request(this.CONTENT_URL).post(data, 'application/json').then(function(d, r){
-			// console.log('Save success');
-			// console.dir(d);
-			// console.dir(r);
-
-			if(!d.ec){
-				// Use key to modify url query
-				history.pushState({
-					key: d.key
-				}, 'Project', '?project=' + d.key);
-			}else{
-				// Fail too
-			}
-		}).catch(function(e){
-			// console.log('Save fail');
-			// console.dir(e);
-		});*/
+	save(){
+		const snapshot = this.createProjectSnapshot();
+    
+    AxiosInstances.docStorage.post('docs.json', snapshot)
+      .then((resp) => {
+				this.change(PROP_RDOCID, resp.data.name);
+      }, (error) => {
+				console.log('Error');
+				console.dir(error);
+      });
 	}
-	// TODO
+
+	/**
+	 * @param {string} projectId
+	 * @return {Promise<Object>}
+	 */
 	static load(projectId){
-		/*new Request(this.CONTENT_URL + projectId).get().then(function(d, r){
-			// console.log('Load success');
-			// console.dir(d);
-			// console.dir(r);
-		}).catch(function(e){
-			// console.log('LOAD fail');
-			// console.dir(e);
-		});*/
+		return AxiosInstances.docStorage.get(`/docs/${projectId}/.json`);
 	}
   
 }
+
+ProjectModel.EXPORTED_PROPERTIES = ['current_doc', 'opened_ids', 'title', 'blocks', PROP_COUNTER, PROP_RDOCID];
 
 module.exports = ProjectModel;
   

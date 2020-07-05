@@ -116,13 +116,13 @@ class AttributeLeaf extends CleaningLeaf {
 
 class EventLeaf {
   constructor (id, $node) {
-	  this.id = id;
-	  this.events = [];
-	  this.$target = $node;
-	}
-  
+    this.id = id;
+    this.events = [];
+    this.$target = $node;
+  }
+
   destroy() {
-    for(i = 0; i < this.events.length; i += 2) {
+    for(let i = 0; i < this.events.length; i += 2) {
       this.$target.removeEventListener(this.events[i], this.events[i+1]);
     }
     this.events.length = 0;

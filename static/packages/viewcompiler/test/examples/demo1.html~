@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="reset.css"/>
+    <title>Demo1</title>
+  </head>
+  <body>
+    <input type="range" value="0" min="0" max="10" step="1" *model="type"/>
+    <input type="text" *model="text4"/>
+    <template *if="type" *equal="[1,2]">
+      <label> Horizontal proportion: <input
+        *model="hp1"
+        type="number" min="-3" max="3" step="1" value="0"
+      /></label>
+      <p *ref="line1">Test [[text2]]</p>
+    </template>
+    <template *property="type" *if="[3,4]">
+      <label> Vertical proportion: <input
+        *model="vp1"
+        type="number" min="-3" max="3" step="1" value="0"
+      /></label>
+      <p>Test [[text1]]</p>
+    </template>
+    <p>Hello [[text2]]! [[text3]]</p>
+    <p>Hello {{text1}}! {{text4}}_</p>
+    <form *on="submit" *dispatch="form-submit" >
+      <input type="text" *ref="form-input"/>
+      <button type="submit">Submit</button>
+    </form>
+    <script src="../viewcompiler.bundle.js"></script>
+    <script src="demo1.js"></script>
+  </body>
+</html>

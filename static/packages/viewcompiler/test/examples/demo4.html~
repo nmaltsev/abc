@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <title>Demo app: the list of properties</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="reset.css"/>
+  </head>
+  <body>
+    <form *on="submit" *dispatch="onNewItem">
+      <input type="text" placeholder="A property name" *model="newValue" *ref="itemInput">
+      <button type="submit">Add</button>
+    </form>
+    <ol *on="click" *dispatch="onListClick">
+      <!-- For list tags (UL, OL) the template content which contains a few nested 
+      tags will be wrapped in <li> tags -->
+      <template *for="list" *each="item">
+        <li>
+          <label>[[item.value]] <button data-id="[[item.id]]">Delete</button></label>
+        </li>
+      </template>
+    </ol>    
+    <script src="../viewcompiler.bundle.js"></script>
+    <script src="demo4.js"></script>
+  </body>
+</html>

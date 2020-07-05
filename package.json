@@ -1,16 +1,19 @@
 {
   "name": "abc-project",
-  "version": "0.6.201",
+  "version": "0.6.209",
   "description": "ABC - online code editor",
   "main": "index.js",
   "scripts": {
-    "build:viewcompiler": "node static/packages/bundlepacker/bundle.js static/packages/viewcompiler/test/index.js > static/packages/viewcompiler/test/viewcompiler.bundle.js",
-    "build": "node static/packages/bundlepacker/bundle.js static/app/source/index.js > static/app/build/index.bundle.js",
+    "start": "python3 -m http.server --directory static/app/build",
+    "build:viewcompiler": "node static/packages/bundlepacker/bundler.js -i static/packages/viewcompiler/test/index.js -o static/packages/viewcompiler/test/viewcompiler.bundle.js -r report.json",
+    "build": "node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o static/app/build/index.bundle.js -r report.json",
     "build:styles": "cat static/app/css/*.css > static/app/build/styles.bundle.css",
-    "pack": "rm dist/*;cat static/app/css/*.css > dist/styles.bundle.css;node static/packages/bundlepacker/bundle.js static/app/source/index.js > dist/index.bundle.js;cp static/app/buildindex.html dist;cp static/app/build/favicon.ico dist",
+    "pack": "rm dist/*;cat static/app/css/*.css > dist/styles.bundle.css;node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o dist/index.bundle.js -r report.json;cp static/app/buildindex.html dist;cp static/app/build/favicon.ico dist",
     "pack:s": "./bin/pack.sh",
-    "zip": "zip -r sec4code.last.zip ."
+    "export": "zip -r sec4code.last.zip . -x \"*node_modules/*\" -x *.git/*",
+    "test": "node ./node_modules/jest-cli/bin/jest.js"
   },
   "author": "N. Maltsev",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {}
 }

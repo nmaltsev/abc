@@ -1,47 +1,64 @@
-
-;const _modules={}
-;const _stack={}
-;const _global=this
-;const _dir={"/backside/events":"/backside","/$4/index":"/$4","/backside/model":"/backside","/viewcompiler/viewcompiler":"/viewcompiler","/viewcompiler/test/index":"/viewcompiler/test"}
-;function _mergePaths(basePath_s, path_s) {
-	if (path_s.indexOf('/') === 0 || /^\w\:/.test(path_s)) return path_s;
-	if (path_s.indexOf('./') === 0) return basePath_s + '/' + path_s.substring(2);
-	const paths = path_s.split('/');
-	const bases = basePath_s.split('/');
-	let i = 0;
-	while (i < paths.length) {
-		if (paths[i] != '..') break;
-		i++;
-	}
-	if (i > bases.length) return null;
-	return bases.slice(0, i > 0 ? -i : bases.length).concat(paths.slice(i)).join('/');
-};function _path2id(path_s){
-	return path_s.replace(/.js$/i,'');
-};function _module2(path_s){
-	const out = {exports:{}};
-	_stack[_path2id(path_s)] = function(){ return out.exports; };
-	
-	return out; 
-};function _executeModule(moduleId) {
-  const modId = _path2id(moduleId);
-  
-  if (!_stack.hasOwnProperty(modId)) {
-      if (!_modules.hasOwnProperty(modId)) {
-        throw('Dependency "%s" was not resolved'.replace('%s', modId));
-      } else {
-        // _global is a scope (window or global)
-        _modules[modId].call(_global, _module2(modId),_require2(_dir[modId]));
-      }
+(new(class{
+  constructor(modules, environment, dir, localRepo){
+    this._modules = modules;
+    this._stack = {};
+    this._global = environment;
+    this._dir = dir;
+    this._localRepo = localRepo;
   }
-  return _stack[modId]();
-};function _require2(basePath){
-	return function(moduleId_s) {
-		let moduleId = _mergePaths(basePath, moduleId_s);
-    let r = _executeModule(moduleId);
-    return r;
-	};
-}
-;_modules["/backside/events"]=function(module, require){function Events(){
+  _executeModule(moduleId){
+    const modId = this.constructor._path2id(moduleId);
+    
+    if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
+    if (!this._modules.hasOwnProperty(modId)) {
+      throw('Dependency "%s" was not resolved'.replace('%s', modId));
+    } else {
+      
+      this._modules[modId].call(this._global, this.$module(modId), this.$require(this._dir[modId], this._localRepo));
+    }
+    
+    return this._stack[modId]();
+  }
+  $require = (basePath, localRepositoryPath) => {
+    return moduleId_s => {
+      const moduleId = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
+      const r = this._executeModule(moduleId);
+      return r;
+    };
+  }
+  $module = (path_s) =>{
+    const out = {exports:{}};
+    this._stack[this.constructor._path2id(path_s)] = function(){return out.exports;};
+    return out; 
+  } 
+  static _path2id(path_s){
+    return path_s.replace(/.js$/i,'');
+  }
+  
+  static _mergePaths(basePath_s, path_s, overridedBasePath_s) {
+    if (path_s.indexOf('/') === 0 || /^\w\:/.test(path_s)) return path_s;
+    
+    if (overridedBasePath_s && path_s[0] !== '.') {
+      return overridedBasePath_s + '/' + path_s;
+    }
+    
+    const paths = path_s.split('/');
+    const bases = basePath_s.split('/');
+    if (paths[0] === '.') paths.shift(); 
+    let i = 0; 
+
+    while (i < paths.length) {
+      if (paths[i] === '.') j++;
+      if (paths[i] !== '..') break;
+      i++;
+    }
+    
+    if (i > bases.length) return null;
+    return bases.slice(0, i > 0 ? -i : bases.length).concat(paths.slice(i)).join('/');
+  }
+})({"/backside/events":function anonymous(module,require
+) {
+function Events(){
 	this._init();
 };
 
@@ -139,8 +156,10 @@ Events.prototype.once = function(name, cb){
 };
 	
 module.exports = Events;
-}
-;_modules["/$4/index"]=function(module, require){﻿/* 
+
+},"/$4/index":function anonymous(module,require
+) {
+﻿/* 
 	$4 v16 2020/03/13
 	DOM manipulation library
 */
@@ -408,8 +427,10 @@ module.exports = {
 		return $node;
 	}
 };
-}
-;_modules["/backside/model"]=function(module, require){const Events = require('./events');
+
+},"/backside/model":function anonymous(module,require
+) {
+const Events = require('./events');
 
 function Model(attr){
 	Events.call(this);
@@ -553,8 +574,10 @@ Model.prototype.listen = function(handlers_o, withDestructor=false){
 };
 
 module.exports = Model;
-}
-;_modules["/viewcompiler/viewcompiler"]=function(module, require){//==================================
+
+},"/viewcompiler/viewcompiler":function anonymous(module,require
+) {
+//==================================
 // View compiler (v. 17) 2019-2020
 //==================================
 const $4 = require('../$4/index');
@@ -672,13 +695,13 @@ class AttributeLeaf extends CleaningLeaf {
 
 class EventLeaf {
   constructor (id, $node) {
-	  this.id = id;
-	  this.events = [];
-	  this.$target = $node;
-	}
-  
+    this.id = id;
+    this.events = [];
+    this.$target = $node;
+  }
+
   destroy() {
-    for(i = 0; i < this.events.length; i += 2) {
+    for(let i = 0; i < this.events.length; i += 2) {
       this.$target.removeEventListener(this.events[i], this.events[i+1]);
     }
     this.events.length = 0;
@@ -1166,8 +1189,10 @@ function compile($root, _model, _pipes) {
 
     return scope;
 };
-}
-;_modules["/viewcompiler/test/index"]=function(module, require){const Model = require('../../backside/model');
+
+},"/viewcompiler/test/index":function anonymous(module,require
+) {
+const Model = require('../../backside/model');
 const compile = require('../viewcompiler');
 
 (function(env){
@@ -1187,4 +1212,5 @@ let model = new Model({prop1: 11});
 model.set('prop2', 2);
 console.dir(model);
 console.dir(this);
-};_executeModule("/viewcompiler/test/index")
+
+}},this,{"/backside/events":"/backside","/$4/index":"/$4","/backside/model":"/backside","/viewcompiler/viewcompiler":"/viewcompiler","/viewcompiler/test/index":"/viewcompiler/test"},""))._executeModule("/viewcompiler/test/index");

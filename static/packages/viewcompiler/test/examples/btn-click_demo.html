@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <title>Demo app: the condition block</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="reset.css"/>
+  </head>
+  <body>
+    <button *on-click="toggleContentBtnClick">Press me</button>
+    <template *if="isContentOpened" *equal="true">
+      <button *on-click="nextBtnClick">Next Button</button>
+    </template>
+
+    <script src="../viewcompiler.bundle.js"></script>
+    <script src="btn-click_demo.js"></script>
+  </body>
+</html>

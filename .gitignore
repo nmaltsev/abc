@@ -61,3 +61,7 @@ typings/
 
 dist/*
 static/app/build/*.bundle.*
+*.zip
+report.json
+*.bundle.js
+package-lock.json
