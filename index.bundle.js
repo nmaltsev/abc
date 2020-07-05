@@ -1,47 +1,64 @@
-
-;const _modules={}
-;const _stack={}
-;const _global=this
-;const _dir={"/packages/backside/events":"/packages/backside","/packages/backside/model":"/packages/backside","/app/lib/xhr":"/app/lib","/app/source/DocumentModel":"/app/source","/packages/backside/utils":"/packages/backside","/app/source/LimitedStack":"/app/source","/app/source/Configs":"/app/source","/app/source/keycodes":"/app/source","/app/source/HtmlEditor.keybindings":"/app/source","/app/lib/each.utils":"/app/lib","/packages/$4/index":"/packages/$4","/app/source/ProjectModel":"/app/source","/packages/backside/view":"/packages/backside","/app/source/HtmlEditor":"/app/source","/app/source/ExtMimeMap":"/app/source","/app/lib/cr":"/app/lib","/app/source/vocabulary":"/app/source","/app/lib/PopupBuilder":"/app/lib","/app/source/testProject":"/app/source","/app/source/defaultProject":"/app/source","/app/lib/BasePopupView":"/app/lib","/packages/viewcompiler/viewcompiler":"/packages/viewcompiler","/app/source/spaces":"/app/source","/app/source/EditView":"/app/source","/app/source/MarkdownViewer":"/app/source","/app/source/JsConsole":"/app/source","/app/source/FrameView":"/app/source","/app/source/SHighlighter":"/app/source","/app/source/HighlighterSets":"/app/source","/app/lib/downloadFile":"/app/lib","/app/lib/ctxMenu":"/app/lib","/app/source/about.popup":"/app/source","/app/source/renameDocument.popup":"/app/source","/app/source/createDocument.popup":"/app/source","/app/source/settings.popup":"/app/source","/app/source/MainView":"/app/source","/app/source/index":"/app/source"}
-;function _mergePaths(basePath_s, path_s) {
-	if (path_s.indexOf('/') === 0 || /^\w\:/.test(path_s)) return path_s;
-	if (path_s.indexOf('./') === 0) return basePath_s + '/' + path_s.substring(2);
-	const paths = path_s.split('/');
-	const bases = basePath_s.split('/');
-	let i = 0;
-	while (i < paths.length) {
-		if (paths[i] != '..') break;
-		i++;
-	}
-	if (i > bases.length) return null;
-	return bases.slice(0, i > 0 ? -i : bases.length).concat(paths.slice(i)).join('/');
-};function _path2id(path_s){
-	return path_s.replace(/.js$/i,'');
-};function _module2(path_s){
-	const out = {exports:{}};
-	_stack[_path2id(path_s)] = function(){ return out.exports; };
-	
-	return out; 
-};function _executeModule(moduleId) {
-  const modId = _path2id(moduleId);
-  
-  if (!_stack.hasOwnProperty(modId)) {
-      if (!_modules.hasOwnProperty(modId)) {
-        throw('Dependency "%s" was not resolved'.replace('%s', modId));
-      } else {
-        // _global is a scope (window or global)
-        _modules[modId].call(_global, _module2(modId),_require2(_dir[modId]));
-      }
+(new(class{
+  constructor(modules, environment, dir, localRepo){
+    this._modules = modules;
+    this._stack = {};
+    this._global = environment;
+    this._dir = dir;
+    this._localRepo = localRepo;
   }
-  return _stack[modId]();
-};function _require2(basePath){
-	return function(moduleId_s) {
-		let moduleId = _mergePaths(basePath, moduleId_s);
-    let r = _executeModule(moduleId);
-    return r;
-	};
-}
-;_modules["/packages/backside/events"]=function(module, require){function Events(){
+  _executeModule(moduleId){
+    const modId = this.constructor._path2id(moduleId);
+    
+    if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
+    if (!this._modules.hasOwnProperty(modId)) {
+      throw('Dependency "%s" was not resolved'.replace('%s', modId));
+    } else {
+      
+      this._modules[modId].call(this._global, this.$module(modId), this.$require(this._dir[modId], this._localRepo));
+    }
+    
+    return this._stack[modId]();
+  }
+  $require = (basePath, localRepositoryPath) => {
+    return moduleId_s => {
+      const moduleId = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
+      const r = this._executeModule(moduleId);
+      return r;
+    };
+  }
+  $module = (path_s) =>{
+    const out = {exports:{}};
+    this._stack[this.constructor._path2id(path_s)] = function(){return out.exports;};
+    return out; 
+  } 
+  static _path2id(path_s){
+    return path_s.replace(/.js$/i,'');
+  }
+  
+  static _mergePaths(basePath_s, path_s, overridedBasePath_s) {
+    if (path_s.indexOf('/') === 0 || /^\w\:/.test(path_s)) return path_s;
+    
+    if (overridedBasePath_s && path_s[0] !== '.') {
+      return overridedBasePath_s + '/' + path_s;
+    }
+    
+    const paths = path_s.split('/');
+    const bases = basePath_s.split('/');
+    if (paths[0] === '.') paths.shift(); 
+    let i = 0; 
+
+    while (i < paths.length) {
+      if (paths[i] === '.') j++;
+      if (paths[i] !== '..') break;
+      i++;
+    }
+    
+    if (i > bases.length) return null;
+    return bases.slice(0, i > 0 ? -i : bases.length).concat(paths.slice(i)).join('/');
+  }
+})({"/packages/backside/events":function anonymous(module,require
+) {
+function Events(){
 	this._init();
 };
 
@@ -139,8 +156,10 @@ Events.prototype.once = function(name, cb){
 };
 	
 module.exports = Events;
-}
-;_modules["/packages/backside/model"]=function(module, require){const Events = require('./events');
+
+},"/packages/backside/model":function anonymous(module,require
+) {
+const Events = require('./events');
 
 function Model(attr){
 	Events.call(this);
@@ -284,89 +303,10 @@ Model.prototype.listen = function(handlers_o, withDestructor=false){
 };
 
 module.exports = Model;
-}
-;_modules["/app/lib/xhr"]=function(module, require){//==================================
-// Request
-//==================================
-module.exports = Request;
-function Request(url, forceJSON){
-  this.url = url;
-  this.xhr = new XMLHttpRequest();
-  this.xhr.onerror = function(e){
-    this._onError && this._onError(this.xhr, e);
-  }.bind(this);
-  this.xhr.onreadystatechange = function(){
-    if(this.xhr.readyState == 4){
-      var 	contentType = this.xhr.getResponseHeader('Content-Type'),
-          response = (this.JSON_MIME.test(contentType) && this.xhr.responseText || forceJSON) ? this._safeJSON(this.xhr.responseText) : this.xhr.responseText;
 
-      if(this.xhr.status > 199 && this.xhr.status < 299 ){
-        this._onComplete && this._onComplete(response, this.xhr);	
-      }else{
-        this._onError && this._onError(this.xhr);
-      }
-          }
-      }.bind(this);
-};
-Request.prototype.JSON_MIME = /application\/json/;
-Request.prototype._safeJSON = function(text){
-  try{
-    return JSON.parse(text);
-  }catch(e){
-    return null;
-  }
-};
-Request.prototype._exportHandlers = function(){
-  var 	self = this;
-
-  return {
-    then: function(cb){
-      self._onComplete = cb;
-      return this;
-    },
-    catch: function(cb){
-      self._onError = cb;
-      return this;
-    },
-    getInstance: function(){
-      return self.xhr;
-    }
-  }
-};
-Request.prototype._serialize = function(params, isJSON){
-    if(params){
-      if(!isJSON){
-        var 	urlencoded = [];
-        
-      for(var key in params){
-        params.hasOwnProperty(key) && urlencoded.push(key + "=" + encodeURIComponent(params[key]));
-          }
-          return urlencoded.join("&");
-      }else{
-        return JSON.stringify(params);
-      }
-    }else{
-      return '';
-    }
-};
-Request.prototype.get = function(data, contentType){
-  var 	url = this._serialize(data);
-
-  this.xhr.open('GET', this.url + (url ? '?' + url : url), true);
-  contentType && this.xhr.setRequestHeader('content-type', contentType);
-  this.xhr.send(null);
-
-  return this._exportHandlers();
-};
-Request.prototype.post = function(data, contentType){
-  this.xhr.open('POST', this.url, true);
-  contentType && this.xhr.setRequestHeader('content-type', contentType);
-  this.xhr.send(this._serialize(data, contentType == 'application/json'));
-
-  return this._exportHandlers();
-};
-}
-;_modules["/app/source/DocumentModel"]=function(module, require){const BacksideModel = require('../../packages/backside/model');
+},"/app/source/DocumentModel":function anonymous(module,require
+) {
+const BacksideModel = require('../../packages/backside/model');
 
 //==========================================
 // DocumentModel 
@@ -412,8 +352,22 @@ DocumentModel.prototype._hiddenLinePattern = /^\%b(\d+)b\%$/;
 DocumentModel._exportedProperties = ['title', 'mime', 'content', 'blocks'];
 
 module.exports = DocumentModel;
-}
-;_modules["/packages/backside/utils"]=function(module, require){var $helpers = {
+
+},"/app/source/instances.axios":function anonymous(module,require
+) {
+const endpoints = {
+  docStorage: window.axios.create({
+    baseURL: 'https://nm-test-apps.firebaseio.com/',
+  }),
+};
+
+endpoints.docStorage.defaults.headers.post['Content-Type'] = 'application/json';
+
+module.exports = endpoints;
+
+},"/packages/backside/utils":function anonymous(module,require
+) {
+var $helpers = {
 	debounce: function(func, wait, immediate){
 		var _timeout;
 		return function() {
@@ -497,8 +451,10 @@ module.exports = DocumentModel;
 };
 
 module.exports = $helpers;
-}
-;_modules["/app/source/LimitedStack"]=function(module, require){// for exctracting items use pop() method
+
+},"/app/source/LimitedStack":function anonymous(module,require
+) {
+// for exctracting items use pop() method
 	
 class LimitedStack extends Array {
   add(item) {
@@ -512,8 +468,10 @@ class LimitedStack extends Array {
 
 LimitedStack.prototype.MAX_STACK_SIZE = 10; 
 module.exports = LimitedStack;
-}
-;_modules["/app/source/Configs"]=function(module, require){function storageAvailable(type) {
+
+},"/app/source/Configs":function anonymous(module,require
+) {
+function storageAvailable(type) {
   try {
     var storage = window[type],
     x = '__storage_test__';
@@ -545,8 +503,10 @@ module.exports = {
   isFirefox: typeof(InstallTrigger) !== 'undefined',
   isIE11: !!window.MSInputMethodContext && !!document.documentMode, // This feature does not work in IE11
 };
-}
-;_modules["/app/source/keycodes"]=function(module, require){const KEY = {};
+
+},"/app/source/keycodes":function anonymous(module,require
+) {
+const KEY = {};
 KEY[(KEY[9] = 'TAB')] = 9;
 KEY[(KEY[13] = 'ENTER')] = 13;
 KEY[(KEY[37] = 'LEFT')] = 37;
@@ -561,8 +521,10 @@ KEY[(KEY[90] = 'Z')] = 90;
 KEY[(KEY[191] = 'SLASH')] = 191;
 KEY[(KEY[222] = 'QUOTE')] = 222;
 module.exports = KEY;
-}
-;_modules["/app/source/HtmlEditor.keybindings"]=function(module, require){function stringQuoting(quotaChar) {
+
+},"/app/source/HtmlEditor.keybindings":function anonymous(module,require
+) {
+function stringQuoting(quotaChar) {
   return function(self, posData){
     let text = self.el.textContent;
     let borders = self._getBordersOfContextLine(posData, text);
@@ -718,8 +680,10 @@ KEY_BINDINGS['CTRL_Y'] = function(self){
 };
 
 module.exports = KEY_BINDINGS;
-}
-;_modules["/app/lib/each.utils"]=function(module, require){function each(collection, callback){
+
+},"/app/lib/each.utils":function anonymous(module,require
+) {
+function each(collection, callback){
 	if(typeof(collection.length) != 'undefined'){
 		for(var i = 0, len = collection.length; i < len; i++){
 			callback(collection[i], i);
@@ -734,8 +698,10 @@ module.exports = KEY_BINDINGS;
 };
 
 module.exports = each;
-}
-;_modules["/packages/$4/index"]=function(module, require){﻿/* 
+
+},"/packages/$4/index":function anonymous(module,require
+) {
+﻿/* 
 	$4 v16 2020/03/13
 	DOM manipulation library
 */
@@ -1003,24 +969,44 @@ module.exports = {
 		return $node;
 	}
 };
-}
-;_modules["/app/source/ProjectModel"]=function(module, require){const Request = require('../lib/xhr');
-const DocumentModel = require('DocumentModel');
+
+},"/app/source/ProjectModel":function anonymous(module,require
+) {
+const DocumentModel = require('./DocumentModel');
 const BacksideModel = require('../../packages/backside/model');
+const AxiosInstances = require('./instances.axios');
+
+const PROP_RDOCID = 'remoteDocId';
+const PROP_COUNTER = 'counter';
+const PROP_OPENED = 'opened_ids';
+const PROP_DOCS = 'docs';
 
 class ProjectModel extends BacksideModel {
-  
+  /**
+   * @param {Object} conf
+   * @param {string[]} conf.opened_ids
+   * @param {number} conf.counter
+   * @param {string} conf.remoteRefId
+   */
   constructor(conf) {
     super(conf);
-    if (!conf.opened_ids) model.set('opened_ids', []);
+    if (!Array.isArray(conf[PROP_OPENED])) this.set(PROP_OPENED, []);
+    const docs = this.get(PROP_DOCS);
+    const maxIndex = Math.max.apply(null, Object.keys(docs).map(num => parseInt(num, 10))) + 1;
+    this.set(PROP_COUNTER, maxIndex);
+    
+    if (!conf.hasOwnProperty(PROP_RDOCID)) this.set(PROP_RDOCID, 0);
 		this.docIDMap = {};
-		this._counter = 0;
+		
+		for(let id in docs){
+			this._add(new DocumentModel(docs[id]), id);
+		}
   }
   
   _add(model, id) {
-		var 	id = id || this._counter++ + '';
+		var 	id = id || this.attr[PROP_COUNTER]++ + '';
 
-		this.attr.docs[id] = model;
+		this.attr[PROP_DOCS][id] = model;
 		model.set('id', id);
 		this.docIDMap[model.get('title')] = id;
 		this.trigger('add', model, this);
@@ -1033,27 +1019,23 @@ class ProjectModel extends BacksideModel {
 			this._add(list[i]);
 		}
 	}
+	
+	_markSpaceAsClosed(docId) {
+		var pos = this.attr[PROP_OPENED].indexOf(docId);
+		if (pos < 0) return;
+		this.attr[PROP_OPENED][pos] = null;
+	}
   
 	spaceChange(spaceId, docId){
-		if(Array.isArray(this.attr.opened_ids)){
-			var pos = this.attr.opened_ids.indexOf(docId);
-			
-			if(pos != -1){
-				// this.attr.opened_ids.splice(pos, 1);
-				this.attr.opened_ids[pos] = null;
-			}
-			
-			this.attr.opened_ids[spaceId] = docId;
+		if (Array.isArray(this.attr[PROP_OPENED])) {
+			this._markSpaceAsClosed(docId);
+			this.attr[PROP_OPENED][spaceId] = docId;
 		}
 		this.trigger('spaceChange');
 	}
   
 	closeSpace(docId){
-		var pos = this.attr.opened_ids.indexOf(docId);
-
-		if(pos != -1){
-			this.attr.opened_ids[pos] = null;
-		}
+		this._markSpaceAsClosed(docId);
 		this.trigger('spaceChange');
 	}
 	
@@ -1062,16 +1044,14 @@ class ProjectModel extends BacksideModel {
     let id;
 		let prj = {
 			model: {
-				docs: {},	
+				[PROP_DOCS]: {},	
 			},
-			_counter: this._counter,
 		};
 
-		this.export(['current_doc', 'opened_ids', 'title', 'blocks'], prj.model);
+		this.export(ProjectModel.EXPORTED_PROPERTIES, prj.model);
 
 		for(id in docs){
-			// todo ovveride export() method
-			prj.model.docs[id] = docs[id].export(DocumentModel._exportedProperties);
+			prj.model[PROP_DOCS][id] = docs[id].export(DocumentModel._exportedProperties);
 		}
     
 		return prj;
@@ -1079,63 +1059,46 @@ class ProjectModel extends BacksideModel {
 	
 	static createEmpty(){
 		return new ProjectModel({
+			[PROP_RDOCID]: null,
+			[PROP_COUNTER]: 0,
 			title: '',
 			gridId: '7', // the layout grid
-			opened_ids: Array(4), // Opened documents
+			[PROP_OPENED]: Array(4), // Opened documents
 			current_doc: 0, // id of the focused doc
-			docs: {}
+			[PROP_DOCS]: {}
 		});
 	}	
 
-	// @todo
-	static save(){
-		/*
-     * var 	hash = $MD.MD5(JSON.stringify(this.attr));
-		var 	data = $m.clone(this.attr),
-				i = data.docs.length;
-
-		data.key = hash;
-
-		// console.log('[CALL save model]');
-		// console.log('MD5 %s', hash);
-		// console.dir(data);
-
-		new Request(this.CONTENT_URL).post(data, 'application/json').then(function(d, r){
-			// console.log('Save success');
-			// console.dir(d);
-			// console.dir(r);
-
-			if(!d.ec){
-				// Use key to modify url query
-				history.pushState({
-					key: d.key
-				}, 'Project', '?project=' + d.key);
-			}else{
-				// Fail too
-			}
-		}).catch(function(e){
-			// console.log('Save fail');
-			// console.dir(e);
-		});*/
+	save(){
+		const snapshot = this.createProjectSnapshot();
+    
+    AxiosInstances.docStorage.post('docs.json', snapshot)
+      .then((resp) => {
+				this.change(PROP_RDOCID, resp.data.name);
+      }, (error) => {
+				console.log('Error');
+				console.dir(error);
+      });
 	}
-	// TODO
+
+	/**
+	 * @param {string} projectId
+	 * @return {Promise<Object>}
+	 */
 	static load(projectId){
-		/*new Request(this.CONTENT_URL + projectId).get().then(function(d, r){
-			// console.log('Load success');
-			// console.dir(d);
-			// console.dir(r);
-		}).catch(function(e){
-			// console.log('LOAD fail');
-			// console.dir(e);
-		});*/
+		return AxiosInstances.docStorage.get(`/docs/${projectId}/.json`);
 	}
   
 }
+
+ProjectModel.EXPORTED_PROPERTIES = ['current_doc', 'opened_ids', 'title', 'blocks', PROP_COUNTER, PROP_RDOCID];
 
 module.exports = ProjectModel;
   
-}
-;_modules["/packages/backside/view"]=function(module, require){const $helpers = require('utils');
+
+},"/packages/backside/view":function anonymous(module,require
+) {
+const $helpers = require('utils');
 
 function View(options){
 	this.controls = Object.create(null);
@@ -1335,8 +1298,10 @@ View.prototype._prebindEvents = function(conf){
 };
 
 module.exports = View;
-}
-;_modules["/app/source/HtmlEditor"]=function(module, require){const LimitedStack = require('LimitedStack');
+
+},"/app/source/HtmlEditor":function anonymous(module,require
+) {
+const LimitedStack = require('LimitedStack');
 const { DEBUG } = require('Configs');
 const config = require('Configs');
 const KEY = require('keycodes');
@@ -1826,8 +1791,10 @@ HtmlEdit.prototype.resetCode = function(code, selectionStartPos, selectionEndPos
 };
 
 module.exports = HtmlEdit;
-}
-;_modules["/app/source/ExtMimeMap"]=function(module, require){module.exports = {
+
+},"/app/source/ExtMimeMap":function anonymous(module,require
+) {
+module.exports = {
   'htm':   'text/html',
   'html':   'text/html',
   'xml':    'text/xml',
@@ -1839,8 +1806,10 @@ module.exports = HtmlEdit;
   'po':     'text/gettext',
   'md':     'text/markdown',
 };
-}
-;_modules["/app/lib/cr"]=function(module, require){// ControlKit (Ckit) v8 2016/10/27
+
+},"/app/lib/cr":function anonymous(module,require
+) {
+// ControlKit (Ckit) v8 2016/10/27
 /*
   Example:
   document.body.appendChild(
@@ -1974,8 +1943,10 @@ module.exports = HtmlEdit;
 	}
 }(this));
 
-}
-;_modules["/app/source/vocabulary"]=function(module, require){module.exports = {
+
+},"/app/source/vocabulary":function anonymous(module,require
+) {
+module.exports = {
   create_new_document: 'Create new document',
   file_name: 'Document name:',
   highlighting_type: 'Syntax Highlight:',
@@ -2005,8 +1976,10 @@ module.exports = HtmlEdit;
   settingDialog_label_theme: 'Theme',
   settingDialog_header_contentSettings: 'Content settings',
 };
-}
-;_modules["/app/lib/PopupBuilder"]=function(module, require){const each = require('each.utils');
+
+},"/app/lib/PopupBuilder":function anonymous(module,require
+) {
+const each = require('each.utils');
 const BacksideEvents = require('../../packages/backside/events');
 const $4 = require('../../packages/$4/index');
 
@@ -2137,8 +2110,10 @@ PopupBuilder.prototype.template =
     '<div class="m3_middle_helper"></div>' +
   '</div>';
 module.exports = PopupBuilder;
-}
-;_modules["/app/source/testProject"]=function(module, require){const ProjectModel = require('ProjectModel');
+
+},"/app/source/testProject":function anonymous(module,require
+) {
+const ProjectModel = require('ProjectModel');
 const DocumentModel = require('DocumentModel');
 
 module.exports = function(){
@@ -2362,8 +2337,10 @@ module.exports = function(){
   ].map((config) => new DocumentModel(config)));
   return projectModel;
 };
-}
-;_modules["/app/source/defaultProject"]=function(module, require){const ProjectModel = require('ProjectModel');
+
+},"/app/source/defaultProject":function anonymous(module,require
+) {
+const ProjectModel = require('ProjectModel');
 const DocumentModel = require('DocumentModel');
 
 
@@ -2413,8 +2390,10 @@ module.exports = function(){
   ].map((settings) => new DocumentModel(settings)));
   return projectModel;
 };
-}
-;_modules["/app/lib/BasePopupView"]=function(module, require){const BacksideView = require('../../packages/backside/view');
+
+},"/app/lib/BasePopupView":function anonymous(module,require
+) {
+const BacksideView = require('../../packages/backside/view');
 const each = require('each.utils');
 const $4 = require('../../packages/$4/index');
 
@@ -2559,9 +2538,11 @@ BasePopupView.prototype.className = 'dwc_popup';
 BasePopupView.prototype.stack = []; // stack for opened popups
 
 module.exports = BasePopupView;
-}
-;_modules["/packages/viewcompiler/viewcompiler"]=function(module, require){//==================================
-// View compiler (v. 16) 2019-2020
+
+},"/packages/viewcompiler/viewcompiler":function anonymous(module,require
+) {
+//==================================
+// View compiler (v. 17) 2019-2020
 //==================================
 const $4 = require('../$4/index');
 const Model = require('../backside/model');
@@ -2572,9 +2553,7 @@ const LIT = {
 	$if: '*if',
 	$equal: '*equal',
 	$model: '*model',
-	$alias: '*alias',
-	$on: '*on',
-	$dispatch: '*dispatch',
+	$alias: '*ref',
 	$for: '*for',
 	$each: '*each',
 };
@@ -2677,6 +2656,23 @@ class AttributeLeaf extends CleaningLeaf {
       });
     }
 }
+
+class EventLeaf {
+  constructor (id, $node) {
+    this.id = id;
+    this.events = [];
+    this.$target = $node;
+  }
+
+  destroy() {
+    for(let i = 0; i < this.events.length; i += 2) {
+      this.$target.removeEventListener(this.events[i], this.events[i+1]);
+    }
+    this.events.length = 0;
+    this.$target = null;
+  }
+}
+
 
 /**
 * @param {string} pattern_s
@@ -2808,13 +2804,13 @@ function attributeInterpolation($attr, $model, pipes){
 * @param {string} [childTagName_s] = 'div'
 * @return {HTMLElement} $target
 */      
-function cloneTemplate($template, childTagName_s = 'div') {
+function cloneTemplate($template, childTagName_s = 'div', force=false) {
     // If <template> contains only one node the app should insert it directly
     const $cloneNode = document.importNode($template.content, true);
     let $temp;
     let $target;
     
-    if ($cloneNode.children.length === 1) {
+    if ($cloneNode.children.length === 1 && !force) {
       $temp = $cloneNode;
       // Attention: next command must be executed before element will be inserted in DOM, because $temp is HtmlDocumentFragment 
       $target = $temp.children[0];
@@ -2827,6 +2823,7 @@ function cloneTemplate($template, childTagName_s = 'div') {
 }
 
 class LoopWatcher {
+  
     constructor ($template, $model, pipes) {
       this.$template = $template;
       this.model = $model;
@@ -2839,12 +2836,18 @@ class LoopWatcher {
     onDestroy(destructor) {
        this._onDestroy = destructor;
     }
+    
+    static LIST_TAGS = 'OL,UL'.split(',') 
 
     render(item, modelAlias) {
       const parentNodeTagName = this.$template.parentNode.tagName;
       const $target = cloneTemplate(
         this.$template, 
-        (parentNodeTagName == 'OL' ||  parentNodeTagName == 'UL') ? 'li' : 'div'
+        // When the internal content does not have any root element the compiler automatically wraps the nodes in these root nodes
+        LoopWatcher.LIST_TAGS.includes(parentNodeTagName) ? 'li' : 'div',
+        // If the content must be a list (wrapped with <UL> or <OL> tags)
+        // and contain a single element that is not a <LI> tag, the content element will be wrapped with the <LI>tag
+        this.$template.content.children.length === 1 && !LoopWatcher.LIST_TAGS.includes(this.$template.content.children[0].tagName)
       );
       let subScope = compile($target, new Model({[modelAlias]: item}), this.pipes);
       this.subjects.push(subScope);
@@ -3009,37 +3012,41 @@ directiveMap.push(function($n){
 
     return subScope;
 });
-// #3 *on="" *dispatch=""
-directiveMap.push(function($n){
-    return $n.attributes[LIT.$on] && $n.attributes[LIT.$dispatch]
-      && $n.attributes[LIT.$on].value && $n.attributes[LIT.$dispatch].value;
-}, function($n, $m){	
-    let subScope = new CleaningNode('*on');
-    // Binding DOM events with Model events
-    let DOMEventName_s = $n.attributes[LIT.$on].value;
-    let ModelDispatcherName_s = $n.attributes[LIT.$dispatch].value;
-    let DOMEventHandler_f = function(e){
-      $m.trigger(ModelDispatcherName_s, e, $m);
-    }
 
-    $n.addEventListener(DOMEventName_s, DOMEventHandler_f);
-    subScope.onDestroy((/*ws*/) => {
-      $n.removeEventListener(DOMEventName_s, DOMEventHandler_f);
-    });
+// #3 *on-<EVENT NAME>="<HANDLER>"
+directiveMap.push(function($n){
+    let i_n = $n.attributes.length;
+    while (i_n--> 0) if ($n.attributes[i_n].name.includes('*on-')) return true;
+    return false;
+}, function($n, $m){	
+    const subScope = new EventLeaf('*on', $n);
+    let i_n = $n.attributes.length;
+    let attr;
+    while (i_n--> 0) {
+      attr = $n.attributes[i_n];
+      if (!attr.name.includes('*on-')) continue;
+      let DOMEventName_s = attr.name.substr(4);
+      let ModelDispatcherName_s = attr.value;
+      let DOMEventHandler_f = function(e){
+        $m.trigger(ModelDispatcherName_s, e, $m);
+      };
+      $n.addEventListener(DOMEventName_s, DOMEventHandler_f);
+      subScope.events.push(DOMEventName_s, DOMEventHandler_f);
+    }
     return subScope;
 });
 
-// #4 *alias="<alias name>"
-// Triggers 'init-alias:<alias name>' and 'remove-alias:<alias name>'
+// #4 *ref="<alias name>"
+// Triggers 'init-ref:<reference name>' and 'destroy-ref:<refernce name>'
 directiveMap.push(function($n){
     return $n.attributes[LIT.$alias] && $n.attributes[LIT.$alias].value;
 }, function($n, $m, pipes){	
     let subScope = new CleaningNode('*alias');
     let alias_s =$n.attributes[LIT.$alias].value;
 
-    $m.trigger('init-alias:' + alias_s, $n, $m);
+    $m.trigger('init-ref:' + alias_s, $n, $m);
     subScope.onDestroy((/*ws*/) => {
-      $m.trigger('remove-alias:' + alias_s, $n, $m);
+      $m.trigger('destroy-ref:' + alias_s, $n, $m);
     });
 
     return subScope;
@@ -3146,16 +3153,20 @@ function compile($root, _model, _pipes) {
 
     return scope;
 };
-}
-;_modules["/app/source/spaces"]=function(module, require){module.exports = {
+
+},"/app/source/spaces":function anonymous(module,require
+) {
+module.exports = {
   SPACE1: 0x1,
   SPACE2: 0x2,
   SPACE3: 0x4,
   SPACE4: 0x8,
   HORIZONTAL: 0x10,
 };
-}
-;_modules["/app/source/EditView"]=function(module, require){const HtmlEdit = require('HtmlEditor');
+
+},"/app/source/EditView":function anonymous(module,require
+) {
+const HtmlEdit = require('HtmlEditor');
 const ExtMimeMap = require('ExtMimeMap');
 const BacksideView = require('../../packages/backside/view');
 const $4 = require('../../packages/$4/index');
@@ -3269,79 +3280,80 @@ class EditView extends BacksideView {
 				}
 				return out;
 			}
-			this.htmlEdit.el.onmousedown = function(e){
-				var $target = e.target;
+  this.htmlEdit.el.onmousedown = function(e){
+    var $target = e.target;
 
-        // TODO refactor code
-				if($target.classList.contains('sh-js_brackets')){ // Hide block
-					e.preventDefault();
-					e.stopPropagation();
+// TODO refactor code
+    if($target.classList.contains('sh-js_brackets')){ // Hide block
+      e.preventDefault();
+      e.stopPropagation();
 
-					let 	isOpen = $target.textContent == '{',
-                content = this.model.get('content'),
-                posData = this.htmlEdit.getSelection(),
-                curPos = posData.end;
+      let 	isOpen = $target.textContent == '{',
+		content = this.model.get('content'),
+		posData = this.htmlEdit.getSelection(),
+		curPos = posData.end;
 					let 	startPos,
-                targetPos = this.htmlEdit.getElementPos($target),
-                endPos,
-                blockCode;
+		targetPos = this.htmlEdit.getElementPos($target),
+		endPos,
+		blockCode;
 
-					if (isOpen) {
-						startPos = targetPos;
-						endPos = findCloseBracket(content, startPos);
-						startPos++;
-						endPos--;
-					}else{
-						endPos = targetPos;
-						startPos = findOpenBracket(content, endPos + 1);
-						startPos++;
-					}
+      if (isOpen) {
+	      startPos = targetPos;
+	      endPos = findCloseBracket(content, startPos);
+	      startPos++;
+	      endPos--;
+      }else{
+	      endPos = targetPos;
+	      startPos = findOpenBracket(content, endPos + 1);
+	      startPos++;
+      }
 
-					blockCode = content.substring(startPos, endPos); 
-					this.model._hiddenLinePattern.lastIndex = 0;
-					
-					if (this.model._hiddenLinePattern.test(blockCode)) {
-						return ;
-					} 
+      blockCode = content.substring(startPos, endPos); 
+      this.model._hiddenLinePattern.lastIndex = 0;
+      
+      if (this.model._hiddenLinePattern.test(blockCode)) {
+	      return ;
+      } 
 
-					content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos);
+      content = content.substring(0, startPos) + '%b' + this.model.createCodeBlock(blockCode) + 'b%' + content.substring(endPos);
 
-					if(curPos > startPos){
-						if(curPos <= endPos){ // Cursor in hidden block
-							curPos = startPos + 13;
-						}else{ // Cursor was after hidden block
-							curPos -= blockCode.length - 12; 
-						}
-					} 
+      if(curPos > startPos){
+	      if(curPos <= endPos){ // Cursor in hidden block
+		      curPos = startPos + 13;
+	      }else{ // Cursor was after hidden block
+		      curPos -= blockCode.length - 12; 
+	      }
+      } 
 
-					posData.sel.removeAllRanges();
-					this.htmlEdit.setText(content)
-					posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
+      posData.sel.removeAllRanges();
+      this.htmlEdit.setText(content)
+      posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
 
-				}else if($target.classList.contains('sh-codeblock')){
-					e.preventDefault();
-					e.stopPropagation();
-					var 	codeBlockId = $target.dataset.id,
-                blocks = this.model.get('blocks');
-                codeBlock = blocks[codeBlockId],
-                content = this.model.get('content'),
-                posData = this.htmlEdit.getSelection(),
-                curPos = posData.end,
-                codeBlockSpace = '%b' + codeBlockId + 'b%',
-                blockSpacePos = this.htmlEdit.getElementPos($target);
+  }else if($target.classList.contains('sh-codeblock')){
+      e.preventDefault();
+      e.stopPropagation();
+      let codeBlockId = $target.dataset.id;
+      let blocks = this.model.get('blocks');
+
+      let codeBlock = blocks[codeBlockId],
+	  content = this.model.get('content'),
+	  posData = this.htmlEdit.getSelection(),
+	  curPos = posData.end,
+	  codeBlockSpace = '%b' + codeBlockId + 'b%',
+	  blockSpacePos = this.htmlEdit.getElementPos($target);
 							
 
-					content = content.replace(codeBlockSpace, codeBlock);
-					blocks[codeBlockId] = null;
-					delete blocks[codeBlockId];
+  content = content.replace(codeBlockSpace, codeBlock);
+  blocks[codeBlockId] = null;
+  delete blocks[codeBlockId];
 
-					if(curPos > blockSpacePos){
-						curPos += codeBlock.length - codeBlockSpace.length; 
-					}
+  if(curPos > blockSpacePos){
+	curPos += codeBlock.length - codeBlockSpace.length; 
+  }
 
-					posData.sel.removeAllRanges();
-					this.htmlEdit.setText(content);
-					posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
+  posData.sel.removeAllRanges();
+  this.htmlEdit.setText(content);
+  posData.sel.addRange(this.htmlEdit.setCaretPos(curPos));
 				}
 			}.bind(this);
 			// Need to restore blocks at copying blocks
@@ -3386,7 +3398,7 @@ class EditView extends BacksideView {
             _clear1,
             _clear2;
 
-			if (!_C) { // Commet by line
+			if (!_C) { // Comment by line
 				_clear1 = new RegExp('^' + _OE, 'g');
 				_clear2 = new RegExp('\n' + _OE, 'g');
 				this.htmlEdit._hooks.CTRL_SLASH = function(fragment){
@@ -3526,8 +3538,10 @@ EditView.prototype.events = {
 };
 
 module.exports = EditView;
-}
-;_modules["/app/source/MarkdownViewer"]=function(module, require){const BacksideView = require('../../packages/backside/view');
+
+},"/app/source/MarkdownViewer":function anonymous(module,require
+) {
+const BacksideView = require('../../packages/backside/view');
 
 class MarkdownViewer extends BacksideView {
   // @param {Backside.Model} appModel
@@ -3604,8 +3618,10 @@ MarkdownViewer.prototype.events = {
 };
 
 module.exports = MarkdownViewer;
-}
-;_modules["/app/source/JsConsole"]=function(module, require){const BacksideView = require('../../packages/backside/view');
+
+},"/app/source/JsConsole":function anonymous(module,require
+) {
+const BacksideView = require('../../packages/backside/view');
 
 class JsConsole extends BacksideView {
   // @param {Backside.Model} appModel
@@ -3847,8 +3863,10 @@ JsConsole.prototype.events = {
 };
 
 module.exports = JsConsole;
-}
-;_modules["/app/source/FrameView"]=function(module, require){const BacksideView = require('../../packages/backside/view');
+
+},"/app/source/FrameView":function anonymous(module,require
+) {
+const BacksideView = require('../../packages/backside/view');
 
 class FrameView extends BacksideView {
   // @param {Backside.Model} appModel
@@ -3992,8 +4010,10 @@ FrameView.prototype.events = {
 }
 
 module.exports = FrameView;
-}
-;_modules["/app/source/SHighlighter"]=function(module, require){function SHighlighter(conf){
+
+},"/app/source/SHighlighter":function anonymous(module,require
+) {
+function SHighlighter(conf){
   this.pattern = conf.PATTERN;
   this.transformer = conf.transformer.bind(conf);
   this.commOpen = conf.commOpen;
@@ -4013,8 +4033,10 @@ SHighlighter.prototype.prettify = function(str){
 };
   
 module.exports =  SHighlighter;
-}
-;_modules["/app/source/HighlighterSets"]=function(module, require){function span(className, textContent){
+
+},"/app/source/HighlighterSets":function anonymous(module,require
+) {
+function span(className, textContent){
   return '<span class="' + className + '">' + textContent + '</span>';
 }
 
@@ -4210,8 +4232,10 @@ module.exports = {
     },
   }
 };
-}
-;_modules["/app/lib/downloadFile"]=function(module, require){function downloadFileFromText(filename, content) {
+
+},"/app/lib/downloadFile":function anonymous(module,require
+) {
+function downloadFileFromText(filename, content) {
   var 	a = document.createElement('a'),
       blob = new Blob([content], {type : "text/plain;charset=UTF-8"});
 
@@ -4224,8 +4248,10 @@ module.exports = {
   delete a;
 }
 module.exports = downloadFileFromText;
-}
-;_modules["/app/lib/ctxMenu"]=function(module, require){const Cr = require('cr');
+
+},"/app/lib/ctxMenu":function anonymous(module,require
+) {
+const Cr = require('cr');
 
 /**
  * @param {Object} conf
@@ -4314,8 +4340,10 @@ module.exports = {
   CtxMenu,
   CtxMenu2
 };
-}
-;_modules["/app/source/about.popup"]=function(module, require){const VOC = require('vocabulary');
+
+},"/app/source/about.popup":function anonymous(module,require
+) {
+const VOC = require('vocabulary');
 const PopupBuilder = require('../lib/PopupBuilder');
 
 module.exports = function(title_s, App){
@@ -4416,8 +4444,10 @@ module.exports = function(title_s, App){
 			}
 		});
 }
-}
-;_modules["/app/source/renameDocument.popup"]=function(module, require){const VOC = require('vocabulary');
+
+},"/app/source/renameDocument.popup":function anonymous(module,require
+) {
+const VOC = require('vocabulary');
 const PopupBuilder = require('../lib/PopupBuilder');
 
 module.exports = function(title_s, doc){
@@ -4467,8 +4497,10 @@ module.exports = function(title_s, doc){
     }
   });
 };
-}
-;_modules["/app/source/createDocument.popup"]=function(module, require){const VOC = require('vocabulary');
+
+},"/app/source/createDocument.popup":function anonymous(module,require
+) {
+const VOC = require('vocabulary');
 const BasePopupView = require('../lib/BasePopupView');
 const DocumentModel = require('DocumentModel');
 const ExtMimeMap = require('ExtMimeMap');
@@ -4581,8 +4613,10 @@ module.exports = function(_model, _view){
     },
   });
 };
-}
-;_modules["/app/source/settings.popup"]=function(module, require){const VOC = require('vocabulary');
+
+},"/app/source/settings.popup":function anonymous(module,require
+) {
+const VOC = require('vocabulary');
 const PopupBuilder = require('../lib/PopupBuilder');
 const compile = require('../../packages/viewcompiler/viewcompiler');
 const { SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL } = require('spaces');
@@ -4740,8 +4774,10 @@ module.exports = function(_self){
     },
   });
 };
-}
-;_modules["/app/source/MainView"]=function(module, require){const DocumentModel = require('DocumentModel');
+
+},"/app/source/MainView":function anonymous(module,require
+) {
+const DocumentModel = require('DocumentModel');
 const EditView = require('EditView');
 const MarkdownViewer = require('MarkdownViewer');
 const JsConsole = require('JsConsole');
@@ -4766,11 +4802,11 @@ const createRenameDocPopup = require('renameDocument.popup');
 const createDocumentPopup = require('createDocument.popup');
 const createSettingsPopup = require('settings.popup');
 
-var LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
+const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
 // Code editor with syntax highlighting v201 2019/12/01
 // (C) 2015-2020
-var VER = 201;
+const VER = 202;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      
@@ -4784,10 +4820,10 @@ class MainView extends BacksideView {
   constructor(conf, $getInitState, $saveInitState) {
     super(conf);
     this.subView = Object.create(null);
-		this.bus = new BacksideEvents();
-		this.listItems = {};
-		this.$getInitState = $getInitState;
-		this.$saveInitState = $saveInitState;
+    this.bus = new BacksideEvents();
+    this.listItems = {};
+    this.$getInitState = $getInitState;
+    this.$saveInitState = $saveInitState;
   }
   
   initialize(conf) {
@@ -4857,39 +4893,47 @@ class MainView extends BacksideView {
 		});
   }
   
+  /**
+   * @param {ProjectModel} model
+   * @return {void}
+   */
   initProject(model) {
 	this.model = model;
 	this.model.listen({
-		'change:current_doc': (id) => {
-			if (!this.subView[id]) return;
-			
-		  this.openTab(id);
-		  // Focusing an HtmlEditor if a view has an editor 
-		  this._stayFocusOnDoc(id);
-		},
-		'change:gridId': (gridId) => {
-			this.changeGrid(gridId);
-		},
-		'change:opened_ids': (openedIds) => {
-			for(var i = 0; i < openedIds.length; i++){
-				openedIds[i] !== null && this.openTab(openedIds[i], 1 << i); // 1<<0 == 1, 1<<1 == 2 
-			}
-		},
-		'destroy': () => {
-			$4.emptyNode(this.controls.items);
-			var 	id,
-						docs = this.model.get('docs');
-			
-			for(id in docs) {
-				docs[id].destroy();
-			}
-			for(id in this.subView) {
-				if (this.subView[id]) this.subView[id].remove();
-			}
-		},
-		'add': (documentModel) => {
-			this.appendDocument(documentModel);
-		},
+	  'change:current_doc': (id) => {
+	    if (!this.subView[id]) return;
+		  
+	    this.openTab(id);
+	    // Focusing an HtmlEditor if a view has an editor 
+	    this._stayFocusOnDoc(id);
+	  },
+	  'change:gridId': (gridId) => {
+	    this.changeGrid(gridId);
+	  },
+	  'change:opened_ids': (openedIds) => {
+	    for(var i = 0; i < openedIds.length; i++){
+	      openedIds[i] !== null && this.openTab(openedIds[i], 1 << i); // 1<<0 == 1, 1<<1 == 2 
+	    }
+	  },
+	  'destroy': () => {
+	    $4.emptyNode(this.controls.items);
+	    var 	id,
+				    docs = this.model.get('docs');
+	    
+	    for(id in docs) {
+		    docs[id].destroy();
+	    }
+	    for(id in this.subView) {
+		    if (this.subView[id]) this.subView[id].remove();
+	    }
+	  },
+	  'add': (documentModel) => {
+	    this.appendDocument(documentModel);
+	  },
+	  'change:remoteDocId': (remoteDocId) => {
+	    console.log('[change:remoteDocId] %s', remoteDocId);
+	    window.history.pushState({remoteDocId}, 'Project', '?project=' + encodeURIComponent(remoteDocId));
+	  },
 	});
 	// Attention: Quick and dirty method to find the next available document by <pre> node at DOM
 	this.bus.on('focus_next_doc', function(v){
@@ -4933,12 +4977,12 @@ class MainView extends BacksideView {
     this._stayFocusOnDoc(this.model.get('current_doc'));
     this.controls.projectTitle.value = this.model.get('title') || 'noname';
 
-		CtxMenu2({
-			label: this.controls.toppanelMenuLabel,
-			menu: this.controls.toppanelMenuList,
-			active_cls: '__active',
-		});
-	}
+      CtxMenu2({
+	label: this.controls.toppanelMenuLabel,
+	menu: this.controls.toppanelMenuList,
+	active_cls: '__active',
+      });
+    }
 
   /**
    * @param {string} id - a document id
@@ -5077,13 +5121,13 @@ class MainView extends BacksideView {
     });
 	}
   
-	// @param {String|null} foregroundId - id of the opened project
-	startNewProject(foregroundId) {
-		if(this.model) this.model.destroy(); // Trigger destroy event
+  // @param {string} [foregroundId] - id of the opened project
+  startNewProject(foregroundId) {
+    if(this.model) this.model.destroy(); // Trigger destroy event
 
-		this.initProject(ProjectModel.createEmpty());
-		this.bus.trigger('start_new_project', this, foregroundId);
-	}
+    this.initProject(ProjectModel.createEmpty());
+    this.bus.trigger('start_new_project', this, foregroundId);
+  }
   
  	renderMenuItem(conf) {
 		var 	div = document.createElement('div'),
@@ -5232,15 +5276,8 @@ MainView.prototype.events = {
     let fr = new FileReader();
 
     fr.onload = function(e){      
-      var 	prj = JSON.parse(e.target.result);
-      var 	projectModel = new ProjectModel(prj.model),
-	          id;
-
-      for(id in prj.model.docs){
-        projectModel._add(new DocumentModel(prj.model.docs[id]), id);
-      }
-
-      projectModel._counter = prj._counter;
+      const prj = JSON.parse(e.target.result);
+      const projectModel = new ProjectModel(prj.model);
 
       if(this.model) this.model.destroy(); // Trigger destroy event
       this.initProject(projectModel);
@@ -5271,17 +5308,24 @@ MainView.prototype.events = {
   'onclick aboutBtn': function(e){
     this.openAboutPopup();
   },
+  'onclick uploadProject': function(e) {
+    if (!this.model) return;
+    this.model.save();
+  },
 };
 
 module.exports = MainView;
-}
-;_modules["/app/source/index"]=function(module, require){const MainView = require('MainView');
-const DocumentModel = require('DocumentModel');
-const ProjectModel = require('ProjectModel');
-const Configs = require('Configs');
-const createDefaultProject = require('defaultProject');
-const createTestProject = require('testProject');
+
+},"/app/source/index":function anonymous(module,require
+) {
+const MainView = require('./MainView');
+const DocumentModel = require('./DocumentModel');
+const ProjectModel = require('./ProjectModel');
+const Configs = require('./Configs');
+const createDefaultProject = require('./defaultProject');
+const createTestProject = require('./testProject');
 const BacksideUtils = require('../../packages/backside/utils'); 
+
 
 // Attention: If url contains `?project=` application make attempt to download data from server
 var 	QUERY_OPTIONS = BacksideUtils.parseQuery(),
@@ -5328,39 +5372,50 @@ App.bus.on('start_new_project', function(app, foregroundId){
   }, 200);
 });	
 
+
+if (!LOCALSTORAGE_AVAILABLE) {
+  App.startNewProject();
+}
+
+const initStateData = BacksideUtils.saveParse(window.localStorage.getItem('statesnapshot')) || {};
+const stateData = Object.assign({ // Merge in default settings
+  showProjectList: false,
+  hideListPanel: false,
+  gridId: '7',
+  gridScheme: 0 | 0x1,
+  themeId: 'light',
+}, initStateData);
+
 if (QUERY_OPTIONS.project) {
-  App.startNewProject(QUERY_OPTIONS.project);
+  if (App.model) {
+    console.warn('Model is already defined');
+    return;
+  }
+  ProjectModel.load(QUERY_OPTIONS.project).then(resp => {
+    const docs = resp.data.model.docs;
+    
+    if (App.model) App.model.destroy();
+    const 	projectModel = new ProjectModel(resp.data.model);
+    App.initProject(projectModel, stateData);
+  }, error => {
+    console.warn('Impossible to load %s', QUERY_OPTIONS.project);
+  });
 } else if (	
-  LOCALSTORAGE_AVAILABLE &&
   (prevPrjData = BacksideUtils.saveParse(window.localStorage.getItem('lastsnapshot')))
 ) {
   if (App.model) App.model.destroy(); // Trigger destroy event
 
   const 	projectModel = new ProjectModel(Object.assign({ // Merge in default settings
-      title: '',
-      opened_ids: Array(4), // открытые документы
-      current_doc: 0, // id of current focused doc
-      docs: {}
-    }, prevPrjData.model));
-    
-  let id;
-  for(id in prevPrjData.model.docs){
-    projectModel._add(new DocumentModel(prevPrjData.model.docs[id]), id);
-  }
+    title: '',
+    opened_ids: Array(4), // already opened documents
+    current_doc: 0, // id of current focused doc
+    docs: {},
+    counter: 0
+  }, prevPrjData.model));
 
-  projectModel._counter = prevPrjData._counter;
-  
-  let initStateData = BacksideUtils.saveParse(window.localStorage.getItem('statesnapshot')) || {};
-
-  App.initProject(projectModel, Object.assign({ // Merge in default settings
-    showProjectList: false,
-    hideListPanel: false,
-    gridId: '7',
-    gridScheme: 0 | 0x1,
-    themeId: 'light',
-  }, initStateData));
+  App.initProject(projectModel, stateData);
 } else {
   App.startNewProject();
 }
-};_executeModule("/app/source/index")
-/*Compiled 2020-04-14:22:14:02*/
+
+}},this,{"/packages/backside/events":"/packages/backside","/packages/backside/model":"/packages/backside","/app/source/DocumentModel":"/app/source","/app/source/instances.axios":"/app/source","/packages/backside/utils":"/packages/backside","/app/source/LimitedStack":"/app/source","/app/source/Configs":"/app/source","/app/source/keycodes":"/app/source","/app/source/HtmlEditor.keybindings":"/app/source","/app/lib/each.utils":"/app/lib","/packages/$4/index":"/packages/$4","/app/source/ProjectModel":"/app/source","/packages/backside/view":"/packages/backside","/app/source/HtmlEditor":"/app/source","/app/source/ExtMimeMap":"/app/source","/app/lib/cr":"/app/lib","/app/source/vocabulary":"/app/source","/app/lib/PopupBuilder":"/app/lib","/app/source/testProject":"/app/source","/app/source/defaultProject":"/app/source","/app/lib/BasePopupView":"/app/lib","/packages/viewcompiler/viewcompiler":"/packages/viewcompiler","/app/source/spaces":"/app/source","/app/source/EditView":"/app/source","/app/source/MarkdownViewer":"/app/source","/app/source/JsConsole":"/app/source","/app/source/FrameView":"/app/source","/app/source/SHighlighter":"/app/source","/app/source/HighlighterSets":"/app/source","/app/lib/downloadFile":"/app/lib","/app/lib/ctxMenu":"/app/lib","/app/source/about.popup":"/app/source","/app/source/renameDocument.popup":"/app/source","/app/source/createDocument.popup":"/app/source","/app/source/settings.popup":"/app/source","/app/source/MainView":"/app/source","/app/source/index":"/app/source"},""))._executeModule("/app/source/index");
