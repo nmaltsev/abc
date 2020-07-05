@@ -1,21 +1,18 @@
 ## ABC
-Abc is online code editor with syntax highlighter, hotkeys and many others features.
+Abc is online code editor with syntax highlighter, hotkeys and other features.
 [Demo](https://nmalcev.github.io/abc/)
 
-It supports:
-- HTML code evolution;
-- JS code evolution;
+Main features:
+- HTML code execution;
+- JS code execution;
 - SVG viewer;
-- Markdown viewer (basicle).
+- Markdown viewer.
 
 ### About
-Abc doesn't have any dependencies. The project was createded for educational purposes.
-At this editor I have represented my ideas around organization of modular architecture and OOP in javascript.
-And I have reached my childhood dream to write my own text editor.
-
-Abc supports code evolution like [Plunker](http://plnkr.co/) or [jsfiddle](https://jsfiddle.net/).
-All projects can be exported to a separate file and imported to another device. It hasn't any backend yet.
-The current version of the application has partial support of markdown file format.
+Abc doesn't have any dependencies. The project was created for educational purposes. And I achieved my childhood dream of writing my own text editor.
+Abc supports code execution and is close to [Plunker](http://plnkr.co/) or [Jsfiddle](https://jsfiddle.net/).
+All projects can be exported to a separate file and imported to another device.
+The current version of the application has partial support for the markdown file format.
 
 ### Commands
 To build the project, you must run the following command:
