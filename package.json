@@ -1,9 +1,10 @@
 {
   "name": "abc-project",
-  "version": "0.6.209",
+  "version": "0.6.210",
   "description": "ABC - online code editor",
   "main": "index.js",
   "scripts": {
+    "serve": "",
     "start": "python3 -m http.server --directory static/app/build",
     "build:viewcompiler": "node static/packages/bundlepacker/bundler.js -i static/packages/viewcompiler/test/index.js -o static/packages/viewcompiler/test/viewcompiler.bundle.js -r report.json",
     "build": "node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o static/app/build/index.bundle.js -r report.json",

@@ -1,5 +1,5 @@
-const ProjectModel = require('ProjectModel');
-const DocumentModel = require('DocumentModel');
+const ProjectModel = require('./ProjectModel');
+const DocumentModel = require('./DocumentModel');
 
 
 module.exports = function(){

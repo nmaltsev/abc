@@ -59,6 +59,7 @@ module.exports = function(title_s, App){
 						'<button class="dwc_btn" type="submit" data-co="submit-btn">' + VOC.close + '</button>' +
 						'<button class="dwc_btn" data-co="start-test-prj-btn">' + VOC.start_test_prj + '</button>' +
 						'<button class="dwc_btn __predefined" data-co="start-default-prj-btn">' + VOC.start_default_prj + '</button>' +
+						'<button class="dwc_btn __predefined" data-co="start-react-prj-btn">' + VOC.start_react_prj + '</button>' +
 					'</div>' +
 				'</form>',
 			events: {
@@ -75,15 +76,25 @@ module.exports = function(title_s, App){
 					this.close();
 					if (App.model) App.model.destroy(); // Trigger destroy event
 
-					App.initProject(require('testProject')());
+					App.initProject(require('./testProject')());
 				},
 				'startDefaultPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
 					if (App.model) App.model.destroy(); // Trigger destroy event
 
-					App.initProject(require('defaultProject')());
+					const newProject = require('./defaultProject')();
+					App.initProject(newProject);
 				},
+				'startReactPrjBtn click': function(e){
+					e.stopPropagation();
+					this.close();
+					if (App.model) App.model.destroy(); // Trigger destroy event
+
+					const newProject = require('./reactProject')();
+					App.initProject(newProject);
+				},
+
 				'toggleBtn click': function(e){
 					e.preventDefault();
 					var $list = this.controls.toggleList;

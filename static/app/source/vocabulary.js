@@ -16,6 +16,7 @@ module.exports = {
   close: 'Close',
   start_test_prj: 'Start test project',
   start_default_prj: 'Start default project',
+  start_react_prj: 'Start React project',
   show: 'Show list of hotkeys',
   hide: 'Hide list of hotkeys',
   rename_document: 'Rename document',

@@ -14,23 +14,25 @@ class ProjectModel extends BacksideModel {
    * @param {number} conf.counter
    * @param {string} conf.remoteRefId
    */
-  constructor(conf) {
-    super(conf);
-    if (!Array.isArray(conf[PROP_OPENED])) this.set(PROP_OPENED, []);
-    const docs = this.get(PROP_DOCS);
-    const maxIndex = Math.max.apply(null, Object.keys(docs).map(num => parseInt(num, 10))) + 1;
-    this.set(PROP_COUNTER, maxIndex);
-    
-    if (!conf.hasOwnProperty(PROP_RDOCID)) this.set(PROP_RDOCID, 0);
+
+	constructor(conf) {
+		super(conf);
+		if (!Array.isArray(conf[PROP_OPENED])) this.set(PROP_OPENED, []);
+		const docs = this.get(PROP_DOCS);
+		const docIdList = Object.keys(docs);
+		const maxIndex = docIdList.length > 0 ? Math.max.apply(null, docIdList.map(num => parseInt(num, 10))) + 1 : 0;
+		this.set(PROP_COUNTER, maxIndex);
+
+		if (!conf.hasOwnProperty(PROP_RDOCID)) this.set(PROP_RDOCID, 0);
 		this.docIDMap = {};
 		
 		for(let id in docs){
 			this._add(new DocumentModel(docs[id]), id);
 		}
-  }
+	}
   
-  _add(model, id) {
-		var 	id = id || this.attr[PROP_COUNTER]++ + '';
+	_add(model, id) {
+		var id = id || this.attr[PROP_COUNTER]++ + '';
 
 		this.attr[PROP_DOCS][id] = model;
 		model.set('id', id);

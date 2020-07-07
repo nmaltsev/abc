@@ -119,7 +119,7 @@ class MainView extends BacksideView {
    * @return {void}
    */
   initProject(model) {
-	this.model = model;
+  this.model = model;
 	this.model.listen({
 	  'change:current_doc': (id) => {
 	    if (!this.subView[id]) return;
@@ -175,11 +175,10 @@ class MainView extends BacksideView {
 		}
 	}.bind(this));
 
-		var  	docs = this.model.get('docs'),
-				openedIds = this.model.get('opened_ids'),
-				currentDoc = this.model.get('current_doc');
+		let  	docs = this.model.get('docs');
+		let		openedIds = this.model.get('opened_ids');
 
-		for (var id in docs) {
+		for (let id in docs) {
 			this.appendDocument(docs[id], true);	
 		}
     
@@ -199,9 +198,9 @@ class MainView extends BacksideView {
     this.controls.projectTitle.value = this.model.get('title') || 'noname';
 
       CtxMenu2({
-	label: this.controls.toppanelMenuLabel,
-	menu: this.controls.toppanelMenuList,
-	active_cls: '__active',
+        label: this.controls.toppanelMenuLabel,
+        menu: this.controls.toppanelMenuList,
+        active_cls: '__active',
       });
     }
 
