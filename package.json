@@ -1,13 +1,13 @@
 {
   "name": "abc-project",
-  "version": "0.6.210",
+  "version": "0.6.211",
   "description": "ABC - online code editor",
   "main": "index.js",
   "scripts": {
     "serve": "",
     "start": "python3 -m http.server --directory static/app/build",
     "build:viewcompiler": "node static/packages/bundlepacker/bundler.js -i static/packages/viewcompiler/test/index.js -o static/packages/viewcompiler/test/viewcompiler.bundle.js -r report.json",
-    "build": "node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o static/app/build/index.bundle.js -r report.json",
+    "bundle:scripts": "node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o static/app/build/index.bundle.js -r report.json",
     "build:styles": "cat static/app/css/*.css > static/app/build/styles.bundle.css",
     "pack": "rm dist/*;cat static/app/css/*.css > dist/styles.bundle.css;node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o dist/index.bundle.js -r report.json;cp static/app/buildindex.html dist;cp static/app/build/favicon.ico dist",
     "pack:s": "./bin/pack.sh",

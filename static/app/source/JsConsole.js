@@ -1,12 +1,14 @@
 const BacksideView = require('../../packages/backside/view');
 
 class JsConsole extends BacksideView {
-  // @param {Backside.Model} appModel
-	// @param {Backside.Model} docModel
+	/**
+	 * @param {Backside.Model} conf.appModel
+	 * @param {Backside.Model} conf.docModel
+	 */
 	constructor(conf) {
-    super(conf);
-    this.appModel = conf.appModel;
-  }
+		super(conf);
+		this.appModel = conf.appModel;
+	}
 
 	initialize(conf) {
 		super.initialize(conf);
@@ -27,7 +29,7 @@ class JsConsole extends BacksideView {
 			'change:title': (title, m) => {
 				this.controls.header.textContent = title;
 			},
-    });
+	    });
 
 		this.controls.frame.onload = function(e){
 			this.updateContent(e.target.contentDocument, this.model.getSource());
@@ -51,8 +53,27 @@ class JsConsole extends BacksideView {
 		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:0 0 0 10px;}.message-error{background:#ffddcf;}</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
 		doc.write('</head><body>');
-		// The try block can catch ReferenceError
-		doc.write('<script>try{' + source + '}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+
+		// TODO:
+		// 	(new Function('alert(1')).toString()
+		
+		let func;
+		let compilationError;
+		try {
+			func = new Function(source);
+		} catch(e) {
+			compilationError = e.toString();
+		}
+
+		if (compilationError) {
+			doc.write('<script>console._reportError(`' + compilationError + '`)</script>');
+			
+		} 
+		else {
+			// The try block can catch ReferenceError
+			doc.write('<script>try{(' + func + '())}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+		}
+	
 		doc.write('</body></html>');
 		doc.close();
 	}

@@ -1,8 +1,8 @@
-const LimitedStack = require('LimitedStack');
-const { DEBUG } = require('Configs');
-const config = require('Configs');
-const KEY = require('keycodes');
-const KEY_BINDINGS = require('HtmlEditor.keybindings');
+const LimitedStack = require('./LimitedStack');
+const { DEBUG } = require('./Configs');
+const config = require('./Configs');
+const KEY = require('./keycodes');
+const KEY_BINDINGS = require('./HtmlEditor.keybindings');
 
 	
 function HtmlEdit($pre, engine, conf, model){
@@ -77,11 +77,12 @@ HtmlEdit.prototype.events = {
           posData.sel.addRange(this.setCaretPos(pos + 1));
         }
         
-        this._history.add({
-          text,
-          start: pos + 1,
-          end: pos + 1,
-        });
+        // Disabled
+        // this._history.add({
+        //   text,
+        //   start: pos + 1,
+        //   end: pos + 1,
+        // });
       } else { // Ovveride moving lines by tab
         if(e.keyCode == KEY.TAB){ // Catch TAB
           e.preventDefault(); //// don't fire oninput event!
@@ -146,7 +147,7 @@ HtmlEdit.prototype.events = {
             posData.sel.removeAllRanges();
             this.setText(historyPoint.text);
             posData.sel.addRange(this.createRange(this.el, historyPoint.start, historyPoint.end));
-            this._history.add(historyPoint);
+            // this._history.add(historyPoint);
           }
         }
       }
@@ -194,18 +195,24 @@ HtmlEdit.prototype.events = {
     e.clipboardData.setData('text/plain', this._hooks.oncopy(text.substring(start, end)));
   },
   input: function(e){
-    var 	text = this.el.textContent, 
-          selection = this.getSelection(),
-          caretPos = selection.end - selection.size;
+    const text = this.el.textContent; 
+    const selection = this.getSelection();
+    const caretPos = selection.end - selection.size;
 
     this.setText(text);
     selection.sel.removeAllRanges();
     selection.sel.addRange(this.setCaretPos(caretPos));
 
-    // TODO save current state for restoring
-    // this._history.push({
-
-    // });
+    setTimeout(() => {
+      console.log('INPUT');
+      console.dir(selection);
+      // TODO add debouncing
+      this._history.add({
+        text,
+        start: selection.end - selection.size,
+        end: selection.end
+      });
+    }, 0);
   }
 };
 
