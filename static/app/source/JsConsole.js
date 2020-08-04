@@ -50,7 +50,7 @@ class JsConsole extends BacksideView {
   updateContent(doc, source) {
 		doc.open();
 		doc.write('<html><head>');
-		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:0 0 0 10px;}.message-error{background:#ffddcf;}</style>');
+		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:1rem;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:/*0 0 0 10px*/0;}.message-error{background:#ffddcf;}</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
 		doc.write('</head><body>');
 
@@ -157,6 +157,8 @@ JsConsole.prototype.injectCode =
 		) {
 			//_console.dir(o);
 			let s = '<b>{</b>';
+			
+			s += '<div class="object-container">';
 			let descriptors = Object.getOwnPropertyDescriptors(o);
 			let value;
 			let property;
@@ -180,6 +182,7 @@ JsConsole.prototype.injectCode =
 			if (Object.getPrototypeOf(o)) {
 				s += '<p>prototype: ' + Object.getPrototypeOf(Object.create(o)).constructor.name + '</p>';
 			}
+			s+='</div>';
 			
 			s += '<b>}</b>';
 			
