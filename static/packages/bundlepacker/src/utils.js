@@ -86,16 +86,19 @@ function normalizePath(path) {
  * @return {string[]}
  */
 function catchDependencies(source) {
-  let pattern = /require\((\'[\w\d\s\$\\\/\-_\+\.]+\'|\"[\w\d\s\$\\\/\-_\+\.]+\")\)/g;
+  let pattern = /(require|import)\((\'[\w\d\s\$\\\/\-_\+\.]+\'|\"[\w\d\s\$\\\/\-_\+\.]+\")\)/g;
   let match;
   let rawpath_s;
-  const list = [];
+  const collection = {
+    require: [],
+    import: []
+  };
   
   while (match = pattern.exec(source)) {
-    rawpath_s = match[1].substr(1, match[1].length - 2);
-    list.push(rawpath_s);
+    rawpath_s = match[2].substr(1, match[2].length - 2);
+    collection[match[1]].push(rawpath_s);
   }
-  return list;
+  return collection;
 }
 
 /**
@@ -166,5 +169,5 @@ module.exports = {
   escapePath,
   groupArguments,
   head,
-  writeText,
+  writeText
 };

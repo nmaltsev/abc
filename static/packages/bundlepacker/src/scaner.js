@@ -13,11 +13,13 @@ class Resource {
    * @param {string} path_s
    * @param {Resource} parentResource
    * @param {string} requestedResource_s
+   * @param {Boolean} [isDynamic] - if resource imported with the import() method
    */
-  constructor(path_s, parentResource, requestedResource_s) {
+  constructor(path_s, parentResource, requestedResource_s, isDynamic = false) {
     this.path = path_s;
     this.parent = parentResource;
-    this.requestedResource = requestedResource_s
+    this.requestedResource = requestedResource_s;
+    this.isDynamic = isDynamic;
   }
   
   /**
@@ -28,14 +30,25 @@ class Resource {
     const dirPath = getDir(this.path);
     return readText(this.path)
       .then((source_s) => {
-          return catchDependencies(source_s)
-            .map((relativePath_s) => {
-                return new Resource(
-                  BUNDLE_CLASS._mergePaths(dirPath, relativePath_s, localPackagePath_s) + '.js',
-                  this,
-                  relativePath_s
-                );
-            }); 
+        const depenedencies = catchDependencies(source_s);
+        
+        return depenedencies.require.map((relativePath_s) => {
+            return new Resource(
+              // TODO remove js extension
+              BUNDLE_CLASS._mergePaths(dirPath, relativePath_s, localPackagePath_s) + '.js',
+              this,
+              relativePath_s
+            );
+          }).concat(
+            depenedencies.import.map(relativePath_s => (
+              new Resource(
+                BUNDLE_CLASS._mergePaths(dirPath, relativePath_s, localPackagePath_s),
+                this,
+                relativePath_s,
+                true
+              )
+            ))
+          );
       })
   }
   
@@ -51,8 +64,14 @@ class Resource {
 
 
 class DependencyScaner {
+
   constructor (path_s, localPackagePath_s) {
     this.load(path_s, localPackagePath_s);
+    this._onResourceCb = function(){};
+  }
+
+  onResource(cb) {
+    this._onResourceCb = cb;
   }
   
   /**
@@ -88,6 +107,12 @@ class DependencyScaner {
       currentGeneration.map((resource) => resource
         .findDependencies(this.localPackagePath_s)
         .catch(e => { 
+          // console.log('NotFoundError');
+          // console.dir(e);
+
+          // Attention this is the first attempt to read a file (when the application is building dependency tree)
+
+
           // It is possible that the requested resource is a npm package
           // todo:
           // 1. request <module name>/index
@@ -99,17 +124,26 @@ class DependencyScaner {
             parent: resource.parent && resource.parent.path
           });
           // all Promise.all results should be filtered from null values
-          return null;
+          return [];
         })
       )
     ).then((results) => {
-      const generationQueue = results
+      const flatResults = results
         .reduce((list, subList) => list.concat(subList), [])
         .filter(res => res instanceof Resource);
       
+      const generationQueue = flatResults 
+        // handle only static imports
+        .filter(res => res.isDynamic === false);
+
+      flatResults 
+        .forEach(res => {
+          this._onResourceCb(Resource);
+        });
+
       this.generations.push(generationQueue);
       return generationQueue;
-    });
+    })
   }
   
   /**

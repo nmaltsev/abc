@@ -1,0 +1,1 @@
+node ../../bundler.js -d index.js -b ./packages -a ./source/attach.js

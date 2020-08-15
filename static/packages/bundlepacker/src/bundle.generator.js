@@ -20,15 +20,24 @@ const BUNDLE_INIT = `(new(%BODY%)(%ARGS%))._executeModule(%LASTMOD%);`;
  * @return {Promise<{code:string, errors:Object[]}>}
  */
 function generateBundleCodeFromFileList(bundleFiles, localPackagePath_s){
+  console.log('[generateBundleCodeFromFileList]');
+  console.dir(generateBundleCodeFromFileList);
   let basePath = getBasePath(bundleFiles.map(function(path){return path.replace(/\\/g, '/');}));
   let lastModule = '';
   const directoryMap = {};
   const moduleErrors = [];
 	  
   return Promise.all(
-    bundleFiles.map(function(path_s){return readText(path_s);})
+    bundleFiles.map(function(path_s){
+      return readText(path_s).catch(e => null);
+    })
   ).then(function(sources){
     let modules_s = sources.map(function(source_s, pos_n){
+      if (!source_s) {
+        console.log('SKIP module');
+        console.dir([bundleFiles[pos_n]]);
+        return;
+      }
       let resourcePath = bundleFiles[pos_n];
       let modId = escapePath(resourcePath).replace(/\\/g, '/').replace(basePath, '').replace('.js', '');
       let dirPath = $path.dirname(resourcePath).replace(/\\/g, '/').replace(basePath, '');
@@ -48,7 +57,9 @@ function generateBundleCodeFromFileList(bundleFiles, localPackagePath_s){
         });
       }
       return JSON.stringify(modId) + ':' + func_s;
-    }).join(',');
+    })
+      .filter(s => !!s)
+      .join(',');
     
     //~ console.log('lastModule %s', lastModule);
     

@@ -6,8 +6,12 @@ const BUNDLE_CLASS = class{
     this._dir = dir;
     this._localRepo = localRepo;
   }
-  _executeModule(moduleId){
-    const modId = this.constructor._path2id(moduleId);
+  _isDefined(modulePath) {
+    const modId = this.constructor._path2id(modulePath);
+    return this._modules.hasOwnProperty(modId);
+  }
+  _executeModule(modulePath){
+    const modId = this.constructor._path2id(modulePath);
     
     if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
     if (!this._modules.hasOwnProperty(modId)) {
@@ -21,8 +25,12 @@ const BUNDLE_CLASS = class{
   }
   $require = (basePath, localRepositoryPath) => {
     return moduleId_s => {
-      const moduleId = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
-      const r = this._executeModule(moduleId);
+      const modulePath = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
+      if (!this._isDefined(modulePath)) {
+        // When the module is not defined inside the bundle the app is going to resolve the module with node.js require method
+        return typeof(require) === 'function' && require(moduleId_s);
+      }
+      const r = this._executeModule(modulePath);
       return r;
     };
   }
