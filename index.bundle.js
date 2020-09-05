@@ -6,8 +6,14 @@
     this._dir = dir;
     this._localRepo = localRepo;
   }
-  _executeModule(moduleId){
-    const modId = this.constructor._path2id(moduleId);
+  
+  _isDefined(modulePath) {
+    const modId = this.constructor._path2id(modulePath);
+    return this._modules.hasOwnProperty(modId);
+  }
+  
+  _executeModule(modulePath){
+    const modId = this.constructor._path2id(modulePath);
     
     if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
     if (!this._modules.hasOwnProperty(modId)) {
@@ -19,21 +25,29 @@
     
     return this._stack[modId]();
   }
-  $require = (basePath, localRepositoryPath) => {
+  
+  $require(basePath, localRepositoryPath) {
     return moduleId_s => {
-      const moduleId = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
-      const r = this._executeModule(moduleId);
+      const modulePath = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
+      if (!this._isDefined(modulePath)) {
+        // When the module is not defined inside the bundle the app is going to resolve the module with node.js require method
+        return typeof(require) === 'function' && require(moduleId_s);
+      }
+      const r = this._executeModule(modulePath);
       return r;
     };
   }
-  $module = (path_s) =>{
+  
+  $module(path_s) {
     const out = {exports:{}};
     this._stack[this.constructor._path2id(path_s)] = function(){return out.exports;};
     return out; 
   } 
+
   static _path2id(path_s){
     return path_s.replace(/.js$/i,'');
   }
+
   
   static _mergePaths(basePath_s, path_s, overridedBasePath_s) {
     if (path_s.indexOf('/') === 0 || /^\w\:/.test(path_s)) return path_s;
@@ -3743,7 +3757,7 @@ class JsConsole extends BacksideView {
   updateContent(doc, source) {
 		doc.open();
 		doc.write('<html><head>');
-		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:0 0 0 10px;}.message-error{background:#ffddcf;}</style>');
+		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:1rem;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:/*0 0 0 10px*/0;}.message-error{background:#ffddcf;}</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
 		doc.write('</head><body>');
 
@@ -3850,6 +3864,8 @@ JsConsole.prototype.injectCode =
 		) {
 			//_console.dir(o);
 			let s = '<b>{</b>';
+			
+			s += '<div class="object-container">';
 			let descriptors = Object.getOwnPropertyDescriptors(o);
 			let value;
 			let property;
@@ -3873,6 +3889,7 @@ JsConsole.prototype.injectCode =
 			if (Object.getPrototypeOf(o)) {
 				s += '<p>prototype: ' + Object.getPrototypeOf(Object.create(o)).constructor.name + '</p>';
 			}
+			s+='</div>';
 			
 			s += '<b>}</b>';
 			
@@ -4445,17 +4462,15 @@ module.exports = function(title_s, App){
 				'<form data-co="form" class="about-popup">' +
 					'<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 					'<div class="sc_section1">' +
-						'<h3 class="sc_header2">Features</h3>' +
-						'<p class="sc_article1">ABC is a syntax-highlighting code editor:</p>' +
+						'<p class="sc_article1">ABC is a code editor with syntax highlighting:</p>' +
 						'<ul class="sc_ul1">' +
 							'<li>Javascript</li>' +
 							'<li>HTML/XML</li>' +
 							'<li>CSS</li>' +
 							'<li>Gettext po</li>' +
-              '<li>Markdown</li>' +
+              				'<li>Markdown</li>' +
 						'</ul>' +
-						'<p class="sc_article1">Supports direct execution of JavaScript code and HTML pages in a browser.</p>' +
-						'<p class="sc_article1">It works offline and allows you to develop a project as in a desktop IDE.</p>' +
+						'<p class="sc_article1">The application supports direct execution of JavaScript code and HTML pages in the browser. It works offline and allows you to develop projects just like in a desktop IDE.</p>' +
 					'</div>' +
 					'<div class="sc_section1">' +
 						'<h3 class="sc_header2">Supported keyboard shortcuts</h3>' +
@@ -4731,32 +4746,24 @@ module.exports = function(_self){
     content: 
       '<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 
-      '<h3 class="sc_header2">' + VOC.settingDialog_header_contentSettings +'</h3>' +
-      
-      '<label class="control-list-item sc_article1">' +
-        '<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +	
-        '<input class="control-list-item_control" type="checkbox"/>' +
-      '</label>' +
-      
-      '<div class="control-list-item sc_article1">' +
-        '<span class="control-list-item_label">' + VOC.settingDialog_label_tabSize + '</span>' +
-        '<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
-      '</div>' +
-      '<div class="control-list-item sc_article1">' +
-        '<span class="sc_toppanel_text">' + VOC.settingDialog_label_grid + '</span>' +
-        '<select data-co="select-grid" class="control-list-item_control sc_project-select">' +
-          '<option value="7" selected>&#9608;</option>' +
-          '<option value="6">&#9473;</option>' +
-          '<option value="5">&#9475;</option>' +
-          '<option value="4">&#9547;</option>' +
-          '<option value="0">&#9507;</option>' +
-          '<option value="1">&#9515;</option>' +
-          '<option value="2">&#9531;</option>' +
-          '<option value="3">&#9523;</option>' +
-        '</select>' +
-          // WATCHER! depends on select-grid 
-          '<div>'+
-            `<template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
+      '<h3 class="sc_header2 sc_section5">' + VOC.settingDialog_header_contentSettings +'</h3>' +
+      `
+      <section class="sc_section5">
+        <h4 class="sc_header3">Editor layout</h4>
+        <div class="control-list-item sc_article1">
+          <span class="sc_toppanel_text">${VOC.settingDialog_label_grid}</span>
+          <select data-co="select-grid" class="control-list-item_control sc_project-select">
+            <option value="7" selected>&#9608;</option>
+            <option value="6">&#9473;</option>
+            <option value="5">&#9475;</option>
+            <option value="4">&#9547;</option>
+            <option value="0">&#9507;</option>
+            <option value="1">&#9515;</option>
+            <option value="2">&#9531;</option>
+            <option value="3">&#9523;</option>
+          </select>
+          <div>
+            <template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
               <label> Horizontal proportion: <input
                 *model="hp1"
                 type="number" min="-3" max="3" step="1" value="0"
@@ -4767,21 +4774,38 @@ module.exports = function(_self){
                 *model="vp1"
                 type="number" min="-3" max="3" step="1" value="0"
               /></label>
-            </template>` +
-          '</div>' +
-      '</div>' +
-      '<div class="control-list-item sc_article1">' +
-        '<span class="sc_toppanel_text">' + VOC.settingDialog_label_theme + '</span>' +
-        '<select data-co="select-theme" class="control-list-item_control sc_project-select">' +
-          '<option value="light">Default</option>' +
-          '<option value="theme-b">Light A</option>' +
-          '<option value="dark">Dark A</option>' +
-          '<option value="theme-a">Dark B</option>' +
-          '<option value="theme-c">Dark C</option>' +
-          '<option value="theme-d">Dark D</option>' +
-          '<option value="theme-e">Dark E</option>' +
-        '</select>' +
-      '</div>' +
+            </template>
+          </div>
+        </div>
+      </section>
+      ` +
+      `<section class="sc_section5">
+        <h4 class="sc_header3">General</h4>
+        <label class="control-list-item sc_article1">
+          <label class="sc-tumbler">
+            <input class="sc-tumbler__input" type="checkbox"/>
+            <span class="sc-tumbler__checkbox"></span>
+          </label>
+          <span class="control-list-item_label">${VOC.settingDialog_label_replaceTabBySpace} <i>(beta)</i></span>
+        </label>
+        <div class="control-list-item sc_article1">
+          <span class="control-list-item_label">${VOC.settingDialog_label_tabSize} <i>(beta)</i></span>
+          <input class="sc_input control-list-item_control" type="number" min="1" max="8" />
+        </div>
+        <div class="control-list-item sc_article1">
+          <span class="sc_toppanel_text">${VOC.settingDialog_label_theme}</span>
+          <select data-co="select-theme" class="control-list-item_control sc_project-select">
+            <option value="light">Default</option>
+            <option value="theme-b">Light A</option>
+            <option value="dark">Dark A</option>
+            <option value="theme-a">Dark B</option>
+            <option value="theme-c">Dark C</option>
+            <option value="theme-d">Dark D</option>
+            <option value="theme-e">Dark E</option>
+          </select>
+        </div>
+      </section>` +
+      
     '',
     events: {
       'close click': function(e){
@@ -4908,7 +4932,7 @@ const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
 // Code editor with syntax highlighting v201 2019/12/01
 // (C) 2015-2020
-const VER = 211;
+const VER = 212;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      
