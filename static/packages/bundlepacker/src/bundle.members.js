@@ -6,10 +6,12 @@ const BUNDLE_CLASS = class{
     this._dir = dir;
     this._localRepo = localRepo;
   }
+  
   _isDefined(modulePath) {
     const modId = this.constructor._path2id(modulePath);
     return this._modules.hasOwnProperty(modId);
   }
+  
   _executeModule(modulePath){
     const modId = this.constructor._path2id(modulePath);
     
@@ -23,7 +25,8 @@ const BUNDLE_CLASS = class{
     
     return this._stack[modId]();
   }
-  $require = (basePath, localRepositoryPath) => {
+  
+  $require(basePath, localRepositoryPath) {
     return moduleId_s => {
       const modulePath = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
       if (!this._isDefined(modulePath)) {
@@ -34,14 +37,17 @@ const BUNDLE_CLASS = class{
       return r;
     };
   }
-  $module = (path_s) =>{
+  
+  $module(path_s) {
     const out = {exports:{}};
     this._stack[this.constructor._path2id(path_s)] = function(){return out.exports;};
     return out; 
   } 
+
   static _path2id(path_s){
     return path_s.replace(/.js$/i,'');
   }
+
   /**
    * _mergePaths('/aaa/bbb/ccc/ddd/333', '../../eee')
    * The method should handle: `./aaa` `./../../aaa` `../../aaa` 

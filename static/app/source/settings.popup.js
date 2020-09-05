@@ -11,32 +11,24 @@ module.exports = function(_self){
     content: 
       '<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 
-      '<h3 class="sc_header2">' + VOC.settingDialog_header_contentSettings +'</h3>' +
-      
-      '<label class="control-list-item sc_article1">' +
-        '<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +	
-        '<input class="control-list-item_control" type="checkbox"/>' +
-      '</label>' +
-      
-      '<div class="control-list-item sc_article1">' +
-        '<span class="control-list-item_label">' + VOC.settingDialog_label_tabSize + '</span>' +
-        '<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
-      '</div>' +
-      '<div class="control-list-item sc_article1">' +
-        '<span class="sc_toppanel_text">' + VOC.settingDialog_label_grid + '</span>' +
-        '<select data-co="select-grid" class="control-list-item_control sc_project-select">' +
-          '<option value="7" selected>&#9608;</option>' +
-          '<option value="6">&#9473;</option>' +
-          '<option value="5">&#9475;</option>' +
-          '<option value="4">&#9547;</option>' +
-          '<option value="0">&#9507;</option>' +
-          '<option value="1">&#9515;</option>' +
-          '<option value="2">&#9531;</option>' +
-          '<option value="3">&#9523;</option>' +
-        '</select>' +
-          // WATCHER! depends on select-grid 
-          '<div>'+
-            `<template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
+      '<h3 class="sc_header2 sc_section5">' + VOC.settingDialog_header_contentSettings +'</h3>' +
+      `
+      <section class="sc_section5">
+        <h4 class="sc_header3">Editor layout</h4>
+        <div class="control-list-item sc_article1">
+          <span class="sc_toppanel_text">${VOC.settingDialog_label_grid}</span>
+          <select data-co="select-grid" class="control-list-item_control sc_project-select">
+            <option value="7" selected>&#9608;</option>
+            <option value="6">&#9473;</option>
+            <option value="5">&#9475;</option>
+            <option value="4">&#9547;</option>
+            <option value="0">&#9507;</option>
+            <option value="1">&#9515;</option>
+            <option value="2">&#9531;</option>
+            <option value="3">&#9523;</option>
+          </select>
+          <div>
+            <template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
               <label> Horizontal proportion: <input
                 *model="hp1"
                 type="number" min="-3" max="3" step="1" value="0"
@@ -47,21 +39,38 @@ module.exports = function(_self){
                 *model="vp1"
                 type="number" min="-3" max="3" step="1" value="0"
               /></label>
-            </template>` +
-          '</div>' +
-      '</div>' +
-      '<div class="control-list-item sc_article1">' +
-        '<span class="sc_toppanel_text">' + VOC.settingDialog_label_theme + '</span>' +
-        '<select data-co="select-theme" class="control-list-item_control sc_project-select">' +
-          '<option value="light">Default</option>' +
-          '<option value="theme-b">Light A</option>' +
-          '<option value="dark">Dark A</option>' +
-          '<option value="theme-a">Dark B</option>' +
-          '<option value="theme-c">Dark C</option>' +
-          '<option value="theme-d">Dark D</option>' +
-          '<option value="theme-e">Dark E</option>' +
-        '</select>' +
-      '</div>' +
+            </template>
+          </div>
+        </div>
+      </section>
+      ` +
+      `<section class="sc_section5">
+        <h4 class="sc_header3">General</h4>
+        <label class="control-list-item sc_article1">
+          <label class="sc-tumbler">
+            <input class="sc-tumbler__input" type="checkbox"/>
+            <span class="sc-tumbler__checkbox"></span>
+          </label>
+          <span class="control-list-item_label">${VOC.settingDialog_label_replaceTabBySpace} <i>(beta)</i></span>
+        </label>
+        <div class="control-list-item sc_article1">
+          <span class="control-list-item_label">${VOC.settingDialog_label_tabSize} <i>(beta)</i></span>
+          <input class="sc_input control-list-item_control" type="number" min="1" max="8" />
+        </div>
+        <div class="control-list-item sc_article1">
+          <span class="sc_toppanel_text">${VOC.settingDialog_label_theme}</span>
+          <select data-co="select-theme" class="control-list-item_control sc_project-select">
+            <option value="light">Default</option>
+            <option value="theme-b">Light A</option>
+            <option value="dark">Dark A</option>
+            <option value="theme-a">Dark B</option>
+            <option value="theme-c">Dark C</option>
+            <option value="theme-d">Dark D</option>
+            <option value="theme-e">Dark E</option>
+          </select>
+        </div>
+      </section>` +
+      
     '',
     events: {
       'close click': function(e){

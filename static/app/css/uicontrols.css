@@ -106,3 +106,55 @@
 .dwc_btn-group .dwc_btn{
 	margin: 0 16px 0 0;
 }
+
+
+.sc-tumbler {
+	display: inline-block;
+	vertical-align: middle;
+	position: relative;
+	width: 24px;
+    height: 14px;
+	margin-right: 5px;
+	font-size: 0;
+	cursor: pointer;
+}
+.sc-tumbler__input {
+	position: absolute;
+	z-index: -1;
+	width: 0;
+	height: 0;
+	opacity: 0;
+}
+.sc-tumbler__checkbox {
+	background: rgba(0,0,0,.1);
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 14px;
+	width: 100%;
+	height: 100%;
+    top: 2px;
+    transition: left .15s;
+}
+.sc-tumbler__checkbox::after {
+	content: "";
+    border-radius: 12px;
+    position: absolute;
+    top: 2px;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    display: block;
+    transition: left .15s;
+    box-shadow: 0 2px 4px 0 rgba(0,0,0,.2), 0 0 1px 0 rgba(0,0,0,.21);
+}
+
+.sc-tumbler__input:focus + .sc-tumbler__checkbox{
+
+}
+.sc-tumbler__input:checked + .sc-tumbler__checkbox{
+	background-color: #2e71ff;	
+}
+.sc-tumbler__input:checked + .sc-tumbler__checkbox::after{
+	left: 11px;
+}

@@ -9,17 +9,15 @@ module.exports = function(title_s, App){
 				'<form data-co="form" class="about-popup">' +
 					'<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 					'<div class="sc_section1">' +
-						'<h3 class="sc_header2">Features</h3>' +
-						'<p class="sc_article1">ABC is a syntax-highlighting code editor:</p>' +
+						'<p class="sc_article1">ABC is a code editor with syntax highlighting:</p>' +
 						'<ul class="sc_ul1">' +
 							'<li>Javascript</li>' +
 							'<li>HTML/XML</li>' +
 							'<li>CSS</li>' +
 							'<li>Gettext po</li>' +
-              '<li>Markdown</li>' +
+              				'<li>Markdown</li>' +
 						'</ul>' +
-						'<p class="sc_article1">Supports direct execution of JavaScript code and HTML pages in a browser.</p>' +
-						'<p class="sc_article1">It works offline and allows you to develop a project as in a desktop IDE.</p>' +
+						'<p class="sc_article1">The application supports direct execution of JavaScript code and HTML pages in the browser. It works offline and allows you to develop projects just like in a desktop IDE.</p>' +
 					'</div>' +
 					'<div class="sc_section1">' +
 						'<h3 class="sc_header2">Supported keyboard shortcuts</h3>' +

@@ -20,8 +20,6 @@ const BUNDLE_INIT = `(new(%BODY%)(%ARGS%))._executeModule(%LASTMOD%);`;
  * @return {Promise<{code:string, errors:Object[]}>}
  */
 function generateBundleCodeFromFileList(bundleFiles, localPackagePath_s){
-  console.log('[generateBundleCodeFromFileList]');
-  console.dir(generateBundleCodeFromFileList);
   let basePath = getBasePath(bundleFiles.map(function(path){return path.replace(/\\/g, '/');}));
   let lastModule = '';
   const directoryMap = {};
