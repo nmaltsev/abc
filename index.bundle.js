@@ -2921,7 +2921,7 @@ class LoopWatcher {
        this._onDestroy = destructor;
     }
     
-    static LIST_TAGS = 'OL,UL'.split(',') 
+    // static LIST_TAGS = 'OL,UL'.split(',') 
 
     render(item, modelAlias) {
       const parentNodeTagName = this.$template.parentNode.tagName;
@@ -2957,6 +2957,9 @@ class LoopWatcher {
       this.$root = $root;
     }
 }
+
+// Edge browser does not support class' static properties
+LoopWatcher.LIST_TAGS = 'OL,UL'.split(',') 
 
 
 // @property Array<function, function> - validator and activator
