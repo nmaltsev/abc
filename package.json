@@ -9,7 +9,7 @@
     "build:viewcompiler": "node static/packages/bundlepacker/bundler.js -i static/packages/viewcompiler/test/index.js -o static/packages/viewcompiler/test/viewcompiler.bundle.js -r report.json",
     "bundle:scripts": "node static/packages/bundlepacker/bundler.js -i static/app/source/index.js -o static/app/build/index.bundle.js -r report.json",
     "bundle:styles": "cat static/app/css/*.css > static/app/build/styles.bundle.css",
-    "pack": "npm run bundle:styles;npm run bundle:scripts;cp static/app/build/index.html dist;cp static/app/build/favicon.ico dist",
+    "pack": "npm run bundle:styles;npm run bundle:scripts;cp static/app/build/styles.bundle.css dist;cp static/app/build/index.bundle.js dist; cp static/app/build/index.html dist;cp static/app/build/favicon.ico dist",
     "pack:s": "./bin/pack.sh",
     "export": "zip -r sec4code.last.zip . -x \"*node_modules/*\" -x *.git/*",
     "test": "node ./node_modules/jest-cli/bin/jest.js"
