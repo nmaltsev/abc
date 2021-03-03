@@ -6,8 +6,14 @@
     this._dir = dir;
     this._localRepo = localRepo;
   }
-  _executeModule(moduleId){
-    const modId = this.constructor._path2id(moduleId);
+  
+  _isDefined(modulePath) {
+    const modId = this.constructor._path2id(modulePath);
+    return this._modules.hasOwnProperty(modId);
+  }
+  
+  _executeModule(modulePath){
+    const modId = this.constructor._path2id(modulePath);
     
     if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
     if (!this._modules.hasOwnProperty(modId)) {
@@ -19,21 +25,29 @@
     
     return this._stack[modId]();
   }
-  $require = (basePath, localRepositoryPath) => {
+  
+  $require(basePath, localRepositoryPath) {
     return moduleId_s => {
-      const moduleId = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
-      const r = this._executeModule(moduleId);
+      const modulePath = this.constructor._mergePaths(basePath, moduleId_s, localRepositoryPath);
+      if (!this._isDefined(modulePath)) {
+        // When the module is not defined inside the bundle the app is going to resolve the module with node.js require method
+        return typeof(require) === 'function' && require(moduleId_s);
+      }
+      const r = this._executeModule(modulePath);
       return r;
     };
   }
-  $module = (path_s) =>{
+  
+  $module(path_s) {
     const out = {exports:{}};
     this._stack[this.constructor._path2id(path_s)] = function(){return out.exports;};
     return out; 
   } 
+
   static _path2id(path_s){
     return path_s.replace(/.js$/i,'');
   }
+
   
   static _mergePaths(basePath_s, path_s, overridedBasePath_s) {
     if (path_s.indexOf('/') === 0 || /^\w\:/.test(path_s)) return path_s;
@@ -988,23 +1002,25 @@ class ProjectModel extends BacksideModel {
    * @param {number} conf.counter
    * @param {string} conf.remoteRefId
    */
-  constructor(conf) {
-    super(conf);
-    if (!Array.isArray(conf[PROP_OPENED])) this.set(PROP_OPENED, []);
-    const docs = this.get(PROP_DOCS);
-    const maxIndex = Math.max.apply(null, Object.keys(docs).map(num => parseInt(num, 10))) + 1;
-    this.set(PROP_COUNTER, maxIndex);
-    
-    if (!conf.hasOwnProperty(PROP_RDOCID)) this.set(PROP_RDOCID, 0);
+
+	constructor(conf) {
+		super(conf);
+		if (!Array.isArray(conf[PROP_OPENED])) this.set(PROP_OPENED, []);
+		const docs = this.get(PROP_DOCS);
+		const docIdList = Object.keys(docs);
+		const maxIndex = docIdList.length > 0 ? Math.max.apply(null, docIdList.map(num => parseInt(num, 10))) + 1 : 0;
+		this.set(PROP_COUNTER, maxIndex);
+
+		if (!conf.hasOwnProperty(PROP_RDOCID)) this.set(PROP_RDOCID, 0);
 		this.docIDMap = {};
 		
 		for(let id in docs){
 			this._add(new DocumentModel(docs[id]), id);
 		}
-  }
+	}
   
-  _add(model, id) {
-		var 	id = id || this.attr[PROP_COUNTER]++ + '';
+	_add(model, id) {
+		var id = id || this.attr[PROP_COUNTER]++ + '';
 
 		this.attr[PROP_DOCS][id] = model;
 		model.set('id', id);
@@ -1301,11 +1317,11 @@ module.exports = View;
 
 },"/app/source/HtmlEditor":function anonymous(module,require
 ) {
-const LimitedStack = require('LimitedStack');
-const { DEBUG } = require('Configs');
-const config = require('Configs');
-const KEY = require('keycodes');
-const KEY_BINDINGS = require('HtmlEditor.keybindings');
+const LimitedStack = require('./LimitedStack');
+const { DEBUG } = require('./Configs');
+const config = require('./Configs');
+const KEY = require('./keycodes');
+const KEY_BINDINGS = require('./HtmlEditor.keybindings');
 
 	
 function HtmlEdit($pre, engine, conf, model){
@@ -1380,11 +1396,12 @@ HtmlEdit.prototype.events = {
           posData.sel.addRange(this.setCaretPos(pos + 1));
         }
         
-        this._history.add({
-          text,
-          start: pos + 1,
-          end: pos + 1,
-        });
+        // Disabled
+        // this._history.add({
+        //   text,
+        //   start: pos + 1,
+        //   end: pos + 1,
+        // });
       } else { // Ovveride moving lines by tab
         if(e.keyCode == KEY.TAB){ // Catch TAB
           e.preventDefault(); //// don't fire oninput event!
@@ -1449,7 +1466,7 @@ HtmlEdit.prototype.events = {
             posData.sel.removeAllRanges();
             this.setText(historyPoint.text);
             posData.sel.addRange(this.createRange(this.el, historyPoint.start, historyPoint.end));
-            this._history.add(historyPoint);
+            // this._history.add(historyPoint);
           }
         }
       }
@@ -1497,18 +1514,24 @@ HtmlEdit.prototype.events = {
     e.clipboardData.setData('text/plain', this._hooks.oncopy(text.substring(start, end)));
   },
   input: function(e){
-    var 	text = this.el.textContent, 
-          selection = this.getSelection(),
-          caretPos = selection.end - selection.size;
+    const text = this.el.textContent; 
+    const selection = this.getSelection();
+    const caretPos = selection.end - selection.size;
 
     this.setText(text);
     selection.sel.removeAllRanges();
     selection.sel.addRange(this.setCaretPos(caretPos));
 
-    // TODO save current state for restoring
-    // this._history.push({
-
-    // });
+    setTimeout(() => {
+      console.log('INPUT');
+      console.dir(selection);
+      // TODO add debouncing
+      this._history.add({
+        text,
+        start: selection.end - selection.size,
+        end: selection.end
+      });
+    }, 0);
   }
 };
 
@@ -1964,6 +1987,7 @@ module.exports = {
   close: 'Close',
   start_test_prj: 'Start test project',
   start_default_prj: 'Start default project',
+  start_react_prj: 'Start React project',
   show: 'Show list of hotkeys',
   hide: 'Hide list of hotkeys',
   rename_document: 'Rename document',
@@ -2340,8 +2364,8 @@ module.exports = function(){
 
 },"/app/source/defaultProject":function anonymous(module,require
 ) {
-const ProjectModel = require('ProjectModel');
-const DocumentModel = require('DocumentModel');
+const ProjectModel = require('./ProjectModel');
+const DocumentModel = require('./DocumentModel');
 
 
 module.exports = function(){
@@ -2386,6 +2410,66 @@ module.exports = function(){
       title: 'readme.txt',
       mime: 'text/plain',
       content: ''
+    },
+  ].map((settings) => new DocumentModel(settings)));
+  return projectModel;
+};
+
+},"/app/source/reactProject":function anonymous(module,require
+) {
+const ProjectModel = require('./ProjectModel');
+const DocumentModel = require('./DocumentModel');
+
+
+module.exports = function(){
+  var projectModel = new ProjectModel({
+      title: 'react app',
+      opened_ids: Array(4),
+      current_doc: undefined,
+      docs: {},
+  });
+  projectModel.add([
+    {
+      title: 'index.html',
+      mime: 'text/html',
+      content: 
+`<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="./style.css"/>
+	</head>
+	<body>
+        <div id="root"></div>
+        <script src="https://unpkg.com/react@17.0.1/umd/react.production.min.js"></script>
+        <script src="https://unpkg.com/react-dom@17.0.1/umd/react-dom.production.min.js"></script>
+        <script src="https://unpkg.com/@babel/standalone@7.13.9/babel.min.js" charset="utf-8"></script>
+        <script type="text/babel" src="./app.jsx">
+        </script>
+	</body>
+</html>
+`        
+    },
+    {
+      title: 'style.css',
+      mime: 'text/css',
+      content: 
+`html{ font: 13px/18px Arial; }
+body{ margin: 0; }
+button, input{ font-family: inherit; }
+table{ border-collapse: collapse; }
+`
+        
+    },
+    {
+      title: 'app.jsx',
+      mime: 'application/javascript',
+      content: 
+`const App = (props) => <h1>Hello world!</h1>;
+
+const rootElement = document.getElementById("root");
+ReactDOM.render(<App />, rootElement);
+`
     },
   ].map((settings) => new DocumentModel(settings)));
   return projectModel;
@@ -2837,7 +2921,7 @@ class LoopWatcher {
        this._onDestroy = destructor;
     }
     
-    static LIST_TAGS = 'OL,UL'.split(',') 
+    // static LIST_TAGS = 'OL,UL'.split(',') 
 
     render(item, modelAlias) {
       const parentNodeTagName = this.$template.parentNode.tagName;
@@ -2873,6 +2957,9 @@ class LoopWatcher {
       this.$root = $root;
     }
 }
+
+// Edge browser does not support class' static properties
+LoopWatcher.LIST_TAGS = 'OL,UL'.split(',') 
 
 
 // @property Array<function, function> - validator and activator
@@ -3624,12 +3711,14 @@ module.exports = MarkdownViewer;
 const BacksideView = require('../../packages/backside/view');
 
 class JsConsole extends BacksideView {
-  // @param {Backside.Model} appModel
-	// @param {Backside.Model} docModel
+	/**
+	 * @param {Backside.Model} conf.appModel
+	 * @param {Backside.Model} conf.docModel
+	 */
 	constructor(conf) {
-    super(conf);
-    this.appModel = conf.appModel;
-  }
+		super(conf);
+		this.appModel = conf.appModel;
+	}
 
 	initialize(conf) {
 		super.initialize(conf);
@@ -3650,7 +3739,7 @@ class JsConsole extends BacksideView {
 			'change:title': (title, m) => {
 				this.controls.header.textContent = title;
 			},
-    });
+	    });
 
 		this.controls.frame.onload = function(e){
 			this.updateContent(e.target.contentDocument, this.model.getSource());
@@ -3671,11 +3760,30 @@ class JsConsole extends BacksideView {
   updateContent(doc, source) {
 		doc.open();
 		doc.write('<html><head>');
-		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:0;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:0 0 0 10px;}.message-error{background:#ffddcf;}</style>');
+		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:1rem;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:/*0 0 0 10px*/0;}.message-error{background:#ffddcf;}</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
 		doc.write('</head><body>');
-		// The try block can catch ReferenceError
-		doc.write('<script>try{' + source + '}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+
+		// TODO:
+		// 	(new Function('alert(1')).toString()
+		
+		let func;
+		let compilationError;
+		try {
+			func = new Function(source);
+		} catch(e) {
+			compilationError = e.toString();
+		}
+
+		if (compilationError) {
+			doc.write('<script>console._reportError(`' + compilationError + '`)</script>');
+			
+		} 
+		else {
+			// The try block can catch ReferenceError
+			doc.write('<script>try{(' + func + '())}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+		}
+	
 		doc.write('</body></html>');
 		doc.close();
 	}
@@ -3759,6 +3867,8 @@ JsConsole.prototype.injectCode =
 		) {
 			//_console.dir(o);
 			let s = '<b>{</b>';
+			
+			s += '<div class="object-container">';
 			let descriptors = Object.getOwnPropertyDescriptors(o);
 			let value;
 			let property;
@@ -3782,6 +3892,7 @@ JsConsole.prototype.injectCode =
 			if (Object.getPrototypeOf(o)) {
 				s += '<p>prototype: ' + Object.getPrototypeOf(Object.create(o)).constructor.name + '</p>';
 			}
+			s+='</div>';
 			
 			s += '<b>}</b>';
 			
@@ -4354,17 +4465,15 @@ module.exports = function(title_s, App){
 				'<form data-co="form" class="about-popup">' +
 					'<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 					'<div class="sc_section1">' +
-						'<h3 class="sc_header2">Features</h3>' +
-						'<p class="sc_article1">ABC is a syntax-highlighting code editor:</p>' +
+						'<p class="sc_article1">ABC is a code editor with syntax highlighting:</p>' +
 						'<ul class="sc_ul1">' +
 							'<li>Javascript</li>' +
 							'<li>HTML/XML</li>' +
 							'<li>CSS</li>' +
 							'<li>Gettext po</li>' +
-              '<li>Markdown</li>' +
+              				'<li>Markdown</li>' +
 						'</ul>' +
-						'<p class="sc_article1">Supports direct execution of JavaScript code and HTML pages in a browser.</p>' +
-						'<p class="sc_article1">It works offline and allows you to develop a project as in a desktop IDE.</p>' +
+						'<p class="sc_article1">The application supports direct execution of JavaScript code and HTML pages in the browser. It works offline and allows you to develop projects just like in a desktop IDE.</p>' +
 					'</div>' +
 					'<div class="sc_section1">' +
 						'<h3 class="sc_header2">Supported keyboard shortcuts</h3>' +
@@ -4404,6 +4513,7 @@ module.exports = function(title_s, App){
 						'<button class="dwc_btn" type="submit" data-co="submit-btn">' + VOC.close + '</button>' +
 						'<button class="dwc_btn" data-co="start-test-prj-btn">' + VOC.start_test_prj + '</button>' +
 						'<button class="dwc_btn __predefined" data-co="start-default-prj-btn">' + VOC.start_default_prj + '</button>' +
+						'<button class="dwc_btn __predefined" data-co="start-react-prj-btn">' + VOC.start_react_prj + '</button>' +
 					'</div>' +
 				'</form>',
 			events: {
@@ -4420,15 +4530,25 @@ module.exports = function(title_s, App){
 					this.close();
 					if (App.model) App.model.destroy(); // Trigger destroy event
 
-					App.initProject(require('testProject')());
+					App.initProject(require('./testProject')());
 				},
 				'startDefaultPrjBtn click': function(e){
 					e.stopPropagation();
 					this.close();
 					if (App.model) App.model.destroy(); // Trigger destroy event
 
-					App.initProject(require('defaultProject')());
+					const newProject = require('./defaultProject')();
+					App.initProject(newProject);
 				},
+				'startReactPrjBtn click': function(e){
+					e.stopPropagation();
+					this.close();
+					if (App.model) App.model.destroy(); // Trigger destroy event
+
+					const newProject = require('./reactProject')();
+					App.initProject(newProject);
+				},
+
 				'toggleBtn click': function(e){
 					e.preventDefault();
 					var $list = this.controls.toggleList;
@@ -4629,32 +4749,24 @@ module.exports = function(_self){
     content: 
       '<div class="dwc_popup-close" data-co="close"><svg class="svg-btn-container"><use xlink:href="#svg-cancel"></use></svg></div>' +
 
-      '<h3 class="sc_header2">' + VOC.settingDialog_header_contentSettings +'</h3>' +
-      
-      '<label class="control-list-item sc_article1">' +
-        '<span class="control-list-item_label">' + VOC.settingDialog_label_replaceTabBySpace + '</span>' +	
-        '<input class="control-list-item_control" type="checkbox"/>' +
-      '</label>' +
-      
-      '<div class="control-list-item sc_article1">' +
-        '<span class="control-list-item_label">' + VOC.settingDialog_label_tabSize + '</span>' +
-        '<input class="sc_input control-list-item_control" type="number" min="1" max="8" />' + 
-      '</div>' +
-      '<div class="control-list-item sc_article1">' +
-        '<span class="sc_toppanel_text">' + VOC.settingDialog_label_grid + '</span>' +
-        '<select data-co="select-grid" class="control-list-item_control sc_project-select">' +
-          '<option value="7" selected>&#9608;</option>' +
-          '<option value="6">&#9473;</option>' +
-          '<option value="5">&#9475;</option>' +
-          '<option value="4">&#9547;</option>' +
-          '<option value="0">&#9507;</option>' +
-          '<option value="1">&#9515;</option>' +
-          '<option value="2">&#9531;</option>' +
-          '<option value="3">&#9523;</option>' +
-        '</select>' +
-          // WATCHER! depends on select-grid 
-          '<div>'+
-            `<template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
+      '<h3 class="sc_header2 sc_section5">' + VOC.settingDialog_header_contentSettings +'</h3>' +
+      `
+      <section class="sc_section5">
+        <h4 class="sc_header3">Editor layout</h4>
+        <div class="control-list-item sc_article1">
+          <span class="sc_toppanel_text">${VOC.settingDialog_label_grid}</span>
+          <select data-co="select-grid" class="control-list-item_control sc_project-select">
+            <option value="7" selected>&#9608;</option>
+            <option value="6">&#9473;</option>
+            <option value="5">&#9475;</option>
+            <option value="4">&#9547;</option>
+            <option value="0">&#9507;</option>
+            <option value="1">&#9515;</option>
+            <option value="2">&#9531;</option>
+            <option value="3">&#9523;</option>
+          </select>
+          <div>
+            <template *if="gridScheme" *equal="[7,11,15,23,27,19,3]">
               <label> Horizontal proportion: <input
                 *model="hp1"
                 type="number" min="-3" max="3" step="1" value="0"
@@ -4665,21 +4777,38 @@ module.exports = function(_self){
                 *model="vp1"
                 type="number" min="-3" max="3" step="1" value="0"
               /></label>
-            </template>` +
-          '</div>' +
-      '</div>' +
-      '<div class="control-list-item sc_article1">' +
-        '<span class="sc_toppanel_text">' + VOC.settingDialog_label_theme + '</span>' +
-        '<select data-co="select-theme" class="control-list-item_control sc_project-select">' +
-          '<option value="light">Default</option>' +
-          '<option value="theme-b">Light A</option>' +
-          '<option value="dark">Dark A</option>' +
-          '<option value="theme-a">Dark B</option>' +
-          '<option value="theme-c">Dark C</option>' +
-          '<option value="theme-d">Dark D</option>' +
-          '<option value="theme-e">Dark E</option>' +
-        '</select>' +
-      '</div>' +
+            </template>
+          </div>
+        </div>
+      </section>
+      ` +
+      `<section class="sc_section5">
+        <h4 class="sc_header3">General</h4>
+        <label class="control-list-item sc_article1">
+          <label class="sc-tumbler">
+            <input class="sc-tumbler__input" type="checkbox"/>
+            <span class="sc-tumbler__checkbox"></span>
+          </label>
+          <span class="control-list-item_label">${VOC.settingDialog_label_replaceTabBySpace} <i>(beta)</i></span>
+        </label>
+        <div class="control-list-item sc_article1">
+          <span class="control-list-item_label">${VOC.settingDialog_label_tabSize} <i>(beta)</i></span>
+          <input class="sc_input control-list-item_control" type="number" min="1" max="8" />
+        </div>
+        <div class="control-list-item sc_article1">
+          <span class="sc_toppanel_text">${VOC.settingDialog_label_theme}</span>
+          <select data-co="select-theme" class="control-list-item_control sc_project-select">
+            <option value="light">Default</option>
+            <option value="theme-b">Light A</option>
+            <option value="dark">Dark A</option>
+            <option value="theme-a">Dark B</option>
+            <option value="theme-c">Dark C</option>
+            <option value="theme-d">Dark D</option>
+            <option value="theme-e">Dark E</option>
+          </select>
+        </div>
+      </section>` +
+      
     '',
     events: {
       'close click': function(e){
@@ -4804,9 +4933,9 @@ const createSettingsPopup = require('settings.popup');
 
 const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-// Code editor with syntax highlighting v201 2019/12/01
-// (C) 2015-2020
-const VER = 202;
+// Code editor with syntax highlighting v213 2021/03/02
+// (C) 2015-2021
+const VER = 213;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      
@@ -4898,7 +5027,7 @@ class MainView extends BacksideView {
    * @return {void}
    */
   initProject(model) {
-	this.model = model;
+  this.model = model;
 	this.model.listen({
 	  'change:current_doc': (id) => {
 	    if (!this.subView[id]) return;
@@ -4954,11 +5083,10 @@ class MainView extends BacksideView {
 		}
 	}.bind(this));
 
-		var  	docs = this.model.get('docs'),
-				openedIds = this.model.get('opened_ids'),
-				currentDoc = this.model.get('current_doc');
+		let  	docs = this.model.get('docs');
+		let		openedIds = this.model.get('opened_ids');
 
-		for (var id in docs) {
+		for (let id in docs) {
 			this.appendDocument(docs[id], true);	
 		}
     
@@ -4978,9 +5106,9 @@ class MainView extends BacksideView {
     this.controls.projectTitle.value = this.model.get('title') || 'noname';
 
       CtxMenu2({
-	label: this.controls.toppanelMenuLabel,
-	menu: this.controls.toppanelMenuList,
-	active_cls: '__active',
+        label: this.controls.toppanelMenuLabel,
+        menu: this.controls.toppanelMenuList,
+        active_cls: '__active',
       });
     }
 
@@ -5353,16 +5481,17 @@ var App = new MainView(
 );
 
 document.onreadystatechange = function(){
-  if(document.readyState == 'complete'){
+  if (document.readyState === 'complete') {
     // Create default 
     App.controls.loadDefaultProject.onclick = function(){
       if(App.model) App.model.destroy(); // Trigger destroy event
       App.initProject(createDefaultProject());
     };
-    App.controls.loadTestProject.onclick = function(){
-      if(App.model) App.model.destroy(); // Trigger destroy event
-      App.initProject(createTestProject());
-    };
+    
+    //~ App.controls.loadTestProject.onclick = function(){
+      //~ if(App.model) App.model.destroy(); // Trigger destroy event
+      //~ App.initProject(createTestProject());
+    //~ };
   }
 }
 // Here we can listen changes and save data (if necessery)
@@ -5418,4 +5547,4 @@ if (QUERY_OPTIONS.project) {
   App.startNewProject();
 }
 
-}},this,{"/packages/backside/events":"/packages/backside","/packages/backside/model":"/packages/backside","/app/source/DocumentModel":"/app/source","/app/source/instances.axios":"/app/source","/packages/backside/utils":"/packages/backside","/app/source/LimitedStack":"/app/source","/app/source/Configs":"/app/source","/app/source/keycodes":"/app/source","/app/source/HtmlEditor.keybindings":"/app/source","/app/lib/each.utils":"/app/lib","/packages/$4/index":"/packages/$4","/app/source/ProjectModel":"/app/source","/packages/backside/view":"/packages/backside","/app/source/HtmlEditor":"/app/source","/app/source/ExtMimeMap":"/app/source","/app/lib/cr":"/app/lib","/app/source/vocabulary":"/app/source","/app/lib/PopupBuilder":"/app/lib","/app/source/testProject":"/app/source","/app/source/defaultProject":"/app/source","/app/lib/BasePopupView":"/app/lib","/packages/viewcompiler/viewcompiler":"/packages/viewcompiler","/app/source/spaces":"/app/source","/app/source/EditView":"/app/source","/app/source/MarkdownViewer":"/app/source","/app/source/JsConsole":"/app/source","/app/source/FrameView":"/app/source","/app/source/SHighlighter":"/app/source","/app/source/HighlighterSets":"/app/source","/app/lib/downloadFile":"/app/lib","/app/lib/ctxMenu":"/app/lib","/app/source/about.popup":"/app/source","/app/source/renameDocument.popup":"/app/source","/app/source/createDocument.popup":"/app/source","/app/source/settings.popup":"/app/source","/app/source/MainView":"/app/source","/app/source/index":"/app/source"},""))._executeModule("/app/source/index");
+}},this,{"/packages/backside/events":"/packages/backside","/packages/backside/model":"/packages/backside","/app/source/DocumentModel":"/app/source","/app/source/instances.axios":"/app/source","/packages/backside/utils":"/packages/backside","/app/source/LimitedStack":"/app/source","/app/source/Configs":"/app/source","/app/source/keycodes":"/app/source","/app/source/HtmlEditor.keybindings":"/app/source","/app/lib/each.utils":"/app/lib","/packages/$4/index":"/packages/$4","/app/source/ProjectModel":"/app/source","/packages/backside/view":"/packages/backside","/app/source/HtmlEditor":"/app/source","/app/source/ExtMimeMap":"/app/source","/app/lib/cr":"/app/lib","/app/source/vocabulary":"/app/source","/app/lib/PopupBuilder":"/app/lib","/app/source/testProject":"/app/source","/app/source/defaultProject":"/app/source","/app/source/reactProject":"/app/source","/app/lib/BasePopupView":"/app/lib","/packages/viewcompiler/viewcompiler":"/packages/viewcompiler","/app/source/spaces":"/app/source","/app/source/EditView":"/app/source","/app/source/MarkdownViewer":"/app/source","/app/source/JsConsole":"/app/source","/app/source/FrameView":"/app/source","/app/source/SHighlighter":"/app/source","/app/source/HighlighterSets":"/app/source","/app/lib/downloadFile":"/app/lib","/app/lib/ctxMenu":"/app/lib","/app/source/about.popup":"/app/source","/app/source/renameDocument.popup":"/app/source","/app/source/createDocument.popup":"/app/source","/app/source/settings.popup":"/app/source","/app/source/MainView":"/app/source","/app/source/index":"/app/source"},""))._executeModule("/app/source/index");
