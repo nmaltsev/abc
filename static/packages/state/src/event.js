@@ -60,7 +60,7 @@ class Event {
   
   once(eventName, handler){
     const _handler = (...args) => {
-      this.off(name, _cb);
+      this.off(eventName, _handler);
       return handler(...args);
     };
     this.on(eventName, _handler);

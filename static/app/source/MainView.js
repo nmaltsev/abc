@@ -25,9 +25,9 @@ const createSettingsPopup = require('settings.popup');
 
 const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-// Code editor with syntax highlighting v201 2019/12/01
-// (C) 2015-2020
-const VER = 212;
+// Code editor with syntax highlighting v213 2021/03/02
+// (C) 2015-2021
+const VER = 213;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      

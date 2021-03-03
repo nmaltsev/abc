@@ -22,9 +22,9 @@ module.exports = function(){
 	</head>
 	<body>
         <div id="root"></div>
-        <script src="https://unpkg.com/react@16.3.2/umd/react.production.min.js"></script>
-        <script src="https://unpkg.com/react-dom@16.3.2/umd/react-dom.production.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js" charset="utf-8"></script>
+        <script src="https://unpkg.com/react@17.0.1/umd/react.production.min.js"></script>
+        <script src="https://unpkg.com/react-dom@17.0.1/umd/react-dom.production.min.js"></script>
+        <script src="https://unpkg.com/@babel/standalone@7.13.9/babel.min.js" charset="utf-8"></script>
         <script type="text/babel" src="./app.jsx">
         </script>
 	</body>

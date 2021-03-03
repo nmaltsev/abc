@@ -1,6 +1,6 @@
 {
   "name": "abc-project",
-  "version": "0.6.212",
+  "version": "0.6.213",
   "description": "ABC - online code editor",
   "main": "index.js",
   "scripts": {

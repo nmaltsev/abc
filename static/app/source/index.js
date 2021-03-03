@@ -33,16 +33,17 @@ var App = new MainView(
 );
 
 document.onreadystatechange = function(){
-  if(document.readyState == 'complete'){
+  if (document.readyState === 'complete') {
     // Create default 
     App.controls.loadDefaultProject.onclick = function(){
       if(App.model) App.model.destroy(); // Trigger destroy event
       App.initProject(createDefaultProject());
     };
-    App.controls.loadTestProject.onclick = function(){
-      if(App.model) App.model.destroy(); // Trigger destroy event
-      App.initProject(createTestProject());
-    };
+    
+    //~ App.controls.loadTestProject.onclick = function(){
+      //~ if(App.model) App.model.destroy(); // Trigger destroy event
+      //~ App.initProject(createTestProject());
+    //~ };
   }
 }
 // Here we can listen changes and save data (if necessery)
