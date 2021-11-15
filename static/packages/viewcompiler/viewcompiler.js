@@ -393,8 +393,9 @@ directiveMap.push(function($n){
     const modelAttr = $n.attributes[LIT.$model];
     const tagName = $n.tagName.toLowerCase();
 
-    return modelAttr && modelAttr.value 
-      && (tagName === 'input' || tagName === 'select')
+    return modelAttr && 
+      modelAttr.value && 
+      (tagName === 'input' || tagName === 'select' || tagName === 'textarea')
   }, function($n, $m){
     let subScope = new CleaningNode('*model');
     let modelAttr = $n.attributes[LIT.$model].value;
@@ -409,14 +410,14 @@ directiveMap.push(function($n){
           $n.type === 'number'
           || $n.type === 'range'
         ) {
-            value = parseInt(value, 0);
+          value = parseInt(value, 0);
         }
 
         if (
           $n.type === 'checkbox'
           || $n.type === 'radio'
         ) {
-            value = e.target.checked;
+          value = e.target.checked;
         }
 
         if ($n.type === 'date') {
@@ -439,7 +440,7 @@ directiveMap.push(function($n){
           $n.removeEventListener('change', inputHandler);
       });
       // Initial set
-      if ($m.get(modelAttr)){
+      if ($m.has(modelAttr)){
          $n.checked = $m.get(modelAttr);
          // Force set
          $m.trigger('change:' + modelAttr, $m.get(modelAttr), $m);
@@ -457,13 +458,14 @@ directiveMap.push(function($n){
       // Initial set
       if ($m.get(modelAttr)){
         const initValue = $m.get(modelAttr);
+        const tagName = $n.tagName.toLowerCase();
         $n.value = initValue;
 
-        if ($n.tagName.toLowerCase() === 'input') {
+        if (tagName === 'input' || tagName === 'textarea') {
           // Force set
           $m.trigger('change:' + modelAttr, initValue, $m);
           inputHandler({target: $n});
-        } else if ($n.tagName.toLowerCase() === 'select'){
+        } else if (tagName === 'select'){
           // Fixing the case when options use interpolations
           setTimeout(function() {$n.value = initValue;}, 0);
         }
@@ -502,7 +504,7 @@ directiveMap.push(function($n){
     return $n.attributes[LIT.$alias] && $n.attributes[LIT.$alias].value;
 }, function($n, $m, pipes){	
     let subScope = new CleaningNode('*alias');
-    let alias_s =$n.attributes[LIT.$alias].value;
+    let alias_s = $n.attributes[LIT.$alias].value;
 
     $m.trigger('init-ref:' + alias_s, $n, $m);
     subScope.onDestroy((/*ws*/) => {
@@ -513,42 +515,83 @@ directiveMap.push(function($n){
 });
 
 
-// #3 *for="" *each=""
+// #5 *for="" *each=""
 directiveMap.push(function($n){
-  return $n.attributes[LIT.$for] && $n.attributes[LIT.$each]
-      && $n.attributes[LIT.$for].value && $n.attributes[LIT.$each].value;
+  return $n.attributes[LIT.$for] && 
+    $n.attributes[LIT.$each] && 
+    $n.attributes[LIT.$for].value && 
+    $n.attributes[LIT.$each].value;
 }, function($n, $m, pipes){
-    const modelAttr = $n.attributes[LIT.$for].value; // list
-    const alias = $n.attributes[LIT.$each].value;
-    const loopWatcher = new LoopWatcher($n, $m, pipes);
-    loopWatcher.mount($n.parentNode);
+  const modelAttr = $n.attributes[LIT.$for].value; // list
+  const alias = $n.attributes[LIT.$each].value;
+  const loopWatcher = new LoopWatcher($n, $m, pipes);
+  loopWatcher.mount($n.parentNode);
 
-    // TODO watch list
-    let modelChangeHandler = $m.on('change:' + modelAttr, function(items, m_o) {
-      console.log('The list changed');
-      console.dir(items);
-      console.dir(loopWatcher);
-      // TODO fix
-      loopWatcher.cleanUp();
-      items.forEach((item) => {
-        loopWatcher.render(item, alias);
-      });
+  // TODO watch list
+  let modelChangeHandler = $m.on('change:' + modelAttr, function(items, m_o) {
+    console.log('The list changed');
+    console.dir(items);
+    console.dir(loopWatcher);
+    // TODO fix
+    loopWatcher.cleanUp();
+    items.forEach((item) => {
+      loopWatcher.render(item, alias);
     });
-    loopWatcher.onDestroy((/*ws*/) => {
-      // cleanup loopWatcher
-      loopWatcher.cleanUp();
-      $m.off('change:' + modelAttr, modelChangeHandler);
+  });
+  loopWatcher.onDestroy((/*ws*/) => {
+    // cleanup loopWatcher
+    loopWatcher.cleanUp();
+    $m.off('change:' + modelAttr, modelChangeHandler);
+  });
+
+  // modelChangeHandler($m.get(modelAttr), $m);
+  let items = $m.get(modelAttr);
+  if (Array.isArray(items)) {
+    items.forEach((item) => {
+      loopWatcher.render(item, alias);
+    });
+  }
+
+  return loopWatcher;
+});
+
+// #6 *attr-enable-<AttributeName>="<model property>"
+directiveMap.push(function($n){
+  let i_n = $n.attributes.length;
+  while (i_n--> 0) if ($n.attributes[i_n].name.includes('*attr-enable-')) return true;
+  return false;
+}, function($n, $m){	
+  const subScope = new AttributeLeaf('*attr-enable', $n);
+  let i_n = $n.attributes.length;
+  let attr;
+  while (i_n --> 0) {
+    attr = $n.attributes[i_n];
+    if (!attr.name.includes('*attr-enable-')) continue;
+    const attrName_s = attr.name.substr(13);
+    const modelAttr = attr.value;
+
+    console.log('::ATTR %s %s', attrName_s, modelAttr);
+
+    // Subscribe to attr.value change
+    const changeHandler = $m.on('change:' + modelAttr, function(value, m_o) {
+      console.log('::[change:%s] %s', modelAttr, value);
+      if (!$n || !$n.parentNode) {
+        console.log('--');
+        return;
+      }
+      $n[value ? 'setAttribute' : 'removeAttribute'](attrName_s, true);
     });
 
-    // modelChangeHandler($m.get(modelAttr), $m);
-    let items = $m.get(modelAttr);
-    if (Array.isArray(items)) {
-      items.forEach((item) => {
-        loopWatcher.render(item, alias);
-      });
+    subScope.affectedProperties.push('change:' + modelAttr, changeHandler);
+
+    // Initial set
+    if ($m.has(modelAttr)){
+      const initValue = $m.get(modelAttr);
+      console.log('::Init settings %s', initValue);
+      $m.trigger('change:' + modelAttr, initValue, $m);
     }
-
-    return loopWatcher;
+  }
+  return subScope;
 });
 
 // @param {HTMLElement} $root
