@@ -11,7 +11,7 @@ module.exports = {
   ok: 'Ok',
   btn_cancel: 'Cancel',
   btn_apply: 'Apply',
-  aboutApp: 'About ABC v 0.6a.%d',
+  aboutApp: 'Welcom guide to ABC v 0.6a.%d',
   unvalid_json_data: 'Unvalid json data',
   close: 'Close',
   start_test_prj: 'Start test project',

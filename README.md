@@ -21,3 +21,7 @@ $ npm run build
 $ npm run build:styles
 ```
 The `static/app/build` folder will contain the executable application. 
+
+
+npm run bundle
+npm run serve

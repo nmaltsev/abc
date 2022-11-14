@@ -25,9 +25,17 @@ const createSettingsPopup = require('settings.popup');
 
 const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-// Code editor with syntax highlighting v213 2021/03/02
+
+// EXPERIMENTAL code
+const package_manifest = require('../../../package.json')
+console.warn('[DEBUG] package_manifest')
+console.dir(package_manifest)
+
+// Code editor with syntax highlighting v214 2022/11/10
 // (C) 2015-2021
-const VER = 213;
+//  TODO get from package.json
+
+const VER = 214;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      

@@ -40,17 +40,17 @@ class JsConsole extends BacksideView {
 		};
 	}
 	
-  refresh() { // send reference on application
-		var 	source = this.model.getSource();
+	refresh() { // send reference on application
+		// var 	source = this.model.getSource();
 
 		this.controls.frame.contentWindow.location.reload();
 		this.controls.header.textContent = this.model.get('title');
 	}
 	
-  updateContent(doc, source) {
+	updateContent(doc, source) {
 		doc.open();
 		doc.write('<html><head>');
-		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:1rem;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:/*0 0 0 10px*/0;}.message-error{background:#ffddcf;}</style>');
+		doc.write('<style>' + this.CONTENT_STYLES + '</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
 		doc.write('</head><body>');
 
@@ -67,11 +67,10 @@ class JsConsole extends BacksideView {
 
 		if (compilationError) {
 			doc.write('<script>console._reportError(`' + compilationError + '`)</script>');
-			
 		} 
 		else {
 			// The try block can catch ReferenceError
-			doc.write('<script>try{(' + func + '())}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+			doc.write('<script>try{(' + func + '())}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.message + "\\n" + e.stack)}</script>');
 		}
 	
 		doc.write('</body></html>');
@@ -212,9 +211,9 @@ JsConsole.prototype.injectCode =
 				s += ''; // Converting to string
 			}
 			let $n = document.createElement('p');
+			$n.style.whiteSpace='pre-wrap';
 			$n.innerHTML = escape(s).replace(/\\n/g, '<br/>&#8203;')
 			document.body.appendChild($n);
-
 		},
 		dir: function(o){
 			let $n = document.createElement('div');
@@ -228,23 +227,33 @@ JsConsole.prototype.injectCode =
 		_reportError: function(message){
 			let $n = document.createElement('p');
 			$n.className = 'message-error';
-			$n.innerHTML = escape(message).replace(/\\n/g, '<br/>&#8203;');
+			// $n.innerHTML = escape(message).replace(/\\n/g, '<br/>&#8203;');
+			$n.innerHTML = escape(message);
 			document.body.appendChild($n);
 		}
 	};
 	E.onerror = function(e, s, line, position, error){
-		console._reportError(e.stack + ' ' + line + ':' + position);
+		console._reportError(e.message + ' ' + e.stack + ' ' + line + ':' + position);
 		_console.log('Catch error');
 		_console.dir(arguments);
 	};
 	E.addEventListener('unhandledrejection', function(e) {
-		console._reportError(e.reason.stack + '');
+		console._reportError(e.reason.message + ' ' + e.reason.stack + '');
 		_console.log('Promise exception');
 		_console.dir(e);
 		_console.dir(e.reason +'');
 	});
 	
 }(window));`;
+
+JsConsole.prototype.CONTENT_STYLES = 'html{font:13px/15px Arial;color:#333;}\
+body{margin:1rem;color:#4ed04e;background:#262424;}\
+p{margin:0 0 8px 0;white-space:pre-wrap;}\
+.object-container{padding:0 0 0 10px;background:#29540b;color:#cde188;font-size:12px;line-height:12px;}\
+.object-container p{margin:/*0 0 0 10px*/0;white-space:pre-wrap;}\
+.message-error{color:rgb(220,21,212);white-space:pre-wrap;}\
+';
+
 JsConsole.prototype.events = {
   'onclick close': function(){
     this.model.trigger('closePresentation', this.model);
@@ -262,5 +271,7 @@ JsConsole.prototype.events = {
     // window.open(urlOnDoc, '_blank');
   },
 };
+
+
 
 module.exports = JsConsole;

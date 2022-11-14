@@ -204,8 +204,8 @@ HtmlEdit.prototype.events = {
     selection.sel.addRange(this.setCaretPos(caretPos));
 
     setTimeout(() => {
-      console.log('INPUT');
-      console.dir(selection);
+      // console.log('INPUT');
+      // console.dir(selection);
       // TODO add debouncing
       this._history.add({
         text,
