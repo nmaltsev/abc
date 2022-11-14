@@ -1,6 +1,10 @@
 (new(class{
   constructor(modules, environment, dir, localRepo){
+    // This object stores all original definitions:
+    // fabrics for js modules
+    // JSON objects for json modules
     this._modules = modules;
+    // stores cached version of js modules
     this._stack = {};
     this._global = environment;
     this._dir = dir;
@@ -14,6 +18,11 @@
   
   _executeModule(modulePath){
     const modId = this.constructor._path2id(modulePath);
+
+    if (modId.endsWith('.json')) {
+      // If Id looks like a json object, return the corresponding json object 
+      return this._modules[modId];
+    }
     
     if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
     if (!this._modules.hasOwnProperty(modId)) {
@@ -70,7 +79,7 @@
     if (i > bases.length) return null;
     return bases.slice(0, i > 0 ? -i : bases.length).concat(paths.slice(i)).join('/');
   }
-})({"/packages/backside/events":function anonymous(module,require
+})({"/src/packages/backside/events":function anonymous(module,require
 ) {
 function Events(){
 	this._init();
@@ -171,7 +180,7 @@ Events.prototype.once = function(name, cb){
 	
 module.exports = Events;
 
-},"/packages/backside/model":function anonymous(module,require
+},"/src/packages/backside/model":function anonymous(module,require
 ) {
 const Events = require('./events');
 
@@ -318,7 +327,7 @@ Model.prototype.listen = function(handlers_o, withDestructor=false){
 
 module.exports = Model;
 
-},"/app/source/DocumentModel":function anonymous(module,require
+},"/src/app/source/DocumentModel":function anonymous(module,require
 ) {
 const BacksideModel = require('../../packages/backside/model');
 
@@ -367,7 +376,7 @@ DocumentModel._exportedProperties = ['title', 'mime', 'content', 'blocks'];
 
 module.exports = DocumentModel;
 
-},"/app/source/instances.axios":function anonymous(module,require
+},"/src/app/source/instances.axios":function anonymous(module,require
 ) {
 const endpoints = {
   docStorage: window.axios.create({
@@ -379,7 +388,7 @@ endpoints.docStorage.defaults.headers.post['Content-Type'] = 'application/json';
 
 module.exports = endpoints;
 
-},"/packages/backside/utils":function anonymous(module,require
+},"/src/packages/backside/utils":function anonymous(module,require
 ) {
 var $helpers = {
 	debounce: function(func, wait, immediate){
@@ -466,7 +475,7 @@ var $helpers = {
 
 module.exports = $helpers;
 
-},"/app/source/LimitedStack":function anonymous(module,require
+},"/src/app/source/LimitedStack":function anonymous(module,require
 ) {
 // for exctracting items use pop() method
 	
@@ -483,7 +492,7 @@ class LimitedStack extends Array {
 LimitedStack.prototype.MAX_STACK_SIZE = 10; 
 module.exports = LimitedStack;
 
-},"/app/source/Configs":function anonymous(module,require
+},"/src/app/source/Configs":function anonymous(module,require
 ) {
 function storageAvailable(type) {
   try {
@@ -518,7 +527,7 @@ module.exports = {
   isIE11: !!window.MSInputMethodContext && !!document.documentMode, // This feature does not work in IE11
 };
 
-},"/app/source/keycodes":function anonymous(module,require
+},"/src/app/source/keycodes":function anonymous(module,require
 ) {
 const KEY = {};
 KEY[(KEY[9] = 'TAB')] = 9;
@@ -536,7 +545,7 @@ KEY[(KEY[191] = 'SLASH')] = 191;
 KEY[(KEY[222] = 'QUOTE')] = 222;
 module.exports = KEY;
 
-},"/app/source/HtmlEditor.keybindings":function anonymous(module,require
+},"/src/app/source/HtmlEditor.keybindings":function anonymous(module,require
 ) {
 function stringQuoting(quotaChar) {
   return function(self, posData){
@@ -695,7 +704,7 @@ KEY_BINDINGS['CTRL_Y'] = function(self){
 
 module.exports = KEY_BINDINGS;
 
-},"/app/lib/each.utils":function anonymous(module,require
+},"/src/app/lib/each.utils":function anonymous(module,require
 ) {
 function each(collection, callback){
 	if(typeof(collection.length) != 'undefined'){
@@ -713,7 +722,7 @@ function each(collection, callback){
 
 module.exports = each;
 
-},"/packages/$4/index":function anonymous(module,require
+},"/src/packages/$4/index":function anonymous(module,require
 ) {
 ﻿/* 
 	$4 v16 2020/03/13
@@ -984,7 +993,7 @@ module.exports = {
 	}
 };
 
-},"/app/source/ProjectModel":function anonymous(module,require
+},"/src/app/source/ProjectModel":function anonymous(module,require
 ) {
 const DocumentModel = require('./DocumentModel');
 const BacksideModel = require('../../packages/backside/model');
@@ -1112,7 +1121,7 @@ ProjectModel.EXPORTED_PROPERTIES = ['current_doc', 'opened_ids', 'title', 'block
 module.exports = ProjectModel;
   
 
-},"/packages/backside/view":function anonymous(module,require
+},"/src/packages/backside/view":function anonymous(module,require
 ) {
 const $helpers = require('utils');
 
@@ -1315,7 +1324,7 @@ View.prototype._prebindEvents = function(conf){
 
 module.exports = View;
 
-},"/app/source/HtmlEditor":function anonymous(module,require
+},"/src/app/source/HtmlEditor":function anonymous(module,require
 ) {
 const LimitedStack = require('./LimitedStack');
 const { DEBUG } = require('./Configs');
@@ -1523,8 +1532,8 @@ HtmlEdit.prototype.events = {
     selection.sel.addRange(this.setCaretPos(caretPos));
 
     setTimeout(() => {
-      console.log('INPUT');
-      console.dir(selection);
+      // console.log('INPUT');
+      // console.dir(selection);
       // TODO add debouncing
       this._history.add({
         text,
@@ -1815,7 +1824,7 @@ HtmlEdit.prototype.resetCode = function(code, selectionStartPos, selectionEndPos
 
 module.exports = HtmlEdit;
 
-},"/app/source/ExtMimeMap":function anonymous(module,require
+},"/src/app/source/ExtMimeMap":function anonymous(module,require
 ) {
 module.exports = {
   'htm':   'text/html',
@@ -1830,7 +1839,7 @@ module.exports = {
   'md':     'text/markdown',
 };
 
-},"/app/lib/cr":function anonymous(module,require
+},"/src/app/lib/cr":function anonymous(module,require
 ) {
 // ControlKit (Ckit) v8 2016/10/27
 /*
@@ -1967,7 +1976,7 @@ module.exports = {
 }(this));
 
 
-},"/app/source/vocabulary":function anonymous(module,require
+},"/src/app/source/vocabulary":function anonymous(module,require
 ) {
 module.exports = {
   create_new_document: 'Create new document',
@@ -1982,7 +1991,7 @@ module.exports = {
   ok: 'Ok',
   btn_cancel: 'Cancel',
   btn_apply: 'Apply',
-  aboutApp: 'About ABC v 0.6a.%d',
+  aboutApp: 'Welcom guide to ABC v 0.6a.%d',
   unvalid_json_data: 'Unvalid json data',
   close: 'Close',
   start_test_prj: 'Start test project',
@@ -2001,7 +2010,7 @@ module.exports = {
   settingDialog_header_contentSettings: 'Content settings',
 };
 
-},"/app/lib/PopupBuilder":function anonymous(module,require
+},"/src/app/lib/PopupBuilder":function anonymous(module,require
 ) {
 const each = require('each.utils');
 const BacksideEvents = require('../../packages/backside/events');
@@ -2135,7 +2144,7 @@ PopupBuilder.prototype.template =
   '</div>';
 module.exports = PopupBuilder;
 
-},"/app/source/testProject":function anonymous(module,require
+},"/src/app/source/testProject":function anonymous(module,require
 ) {
 const ProjectModel = require('ProjectModel');
 const DocumentModel = require('DocumentModel');
@@ -2362,7 +2371,7 @@ module.exports = function(){
   return projectModel;
 };
 
-},"/app/source/defaultProject":function anonymous(module,require
+},"/src/app/source/defaultProject":function anonymous(module,require
 ) {
 const ProjectModel = require('./ProjectModel');
 const DocumentModel = require('./DocumentModel');
@@ -2415,7 +2424,7 @@ module.exports = function(){
   return projectModel;
 };
 
-},"/app/source/reactProject":function anonymous(module,require
+},"/src/app/source/reactProject":function anonymous(module,require
 ) {
 const ProjectModel = require('./ProjectModel');
 const DocumentModel = require('./DocumentModel');
@@ -2475,7 +2484,7 @@ ReactDOM.render(<App />, rootElement);
   return projectModel;
 };
 
-},"/app/lib/BasePopupView":function anonymous(module,require
+},"/src/app/lib/BasePopupView":function anonymous(module,require
 ) {
 const BacksideView = require('../../packages/backside/view');
 const each = require('each.utils');
@@ -2623,10 +2632,10 @@ BasePopupView.prototype.stack = []; // stack for opened popups
 
 module.exports = BasePopupView;
 
-},"/packages/viewcompiler/viewcompiler":function anonymous(module,require
+},"/src/packages/viewcompiler/viewcompiler":function anonymous(module,require
 ) {
 //==================================
-// View compiler (v. 17) 2019-2020
+// View compiler (v. 18) 2019-2021
 //==================================
 const $4 = require('../$4/index');
 const Model = require('../backside/model');
@@ -3020,8 +3029,9 @@ directiveMap.push(function($n){
     const modelAttr = $n.attributes[LIT.$model];
     const tagName = $n.tagName.toLowerCase();
 
-    return modelAttr && modelAttr.value 
-      && (tagName === 'input' || tagName === 'select')
+    return modelAttr && 
+      modelAttr.value && 
+      (tagName === 'input' || tagName === 'select' || tagName === 'textarea')
   }, function($n, $m){
     let subScope = new CleaningNode('*model');
     let modelAttr = $n.attributes[LIT.$model].value;
@@ -3036,14 +3046,14 @@ directiveMap.push(function($n){
           $n.type === 'number'
           || $n.type === 'range'
         ) {
-            value = parseInt(value, 0);
+          value = parseInt(value, 0);
         }
 
         if (
           $n.type === 'checkbox'
           || $n.type === 'radio'
         ) {
-            value = e.target.checked;
+          value = e.target.checked;
         }
 
         if ($n.type === 'date') {
@@ -3066,7 +3076,7 @@ directiveMap.push(function($n){
           $n.removeEventListener('change', inputHandler);
       });
       // Initial set
-      if ($m.get(modelAttr)){
+      if ($m.has(modelAttr)){
          $n.checked = $m.get(modelAttr);
          // Force set
          $m.trigger('change:' + modelAttr, $m.get(modelAttr), $m);
@@ -3084,13 +3094,14 @@ directiveMap.push(function($n){
       // Initial set
       if ($m.get(modelAttr)){
         const initValue = $m.get(modelAttr);
+        const tagName = $n.tagName.toLowerCase();
         $n.value = initValue;
 
-        if ($n.tagName.toLowerCase() === 'input') {
+        if (tagName === 'input' || tagName === 'textarea') {
           // Force set
           $m.trigger('change:' + modelAttr, initValue, $m);
           inputHandler({target: $n});
-        } else if ($n.tagName.toLowerCase() === 'select'){
+        } else if (tagName === 'select'){
           // Fixing the case when options use interpolations
           setTimeout(function() {$n.value = initValue;}, 0);
         }
@@ -3129,7 +3140,7 @@ directiveMap.push(function($n){
     return $n.attributes[LIT.$alias] && $n.attributes[LIT.$alias].value;
 }, function($n, $m, pipes){	
     let subScope = new CleaningNode('*alias');
-    let alias_s =$n.attributes[LIT.$alias].value;
+    let alias_s = $n.attributes[LIT.$alias].value;
 
     $m.trigger('init-ref:' + alias_s, $n, $m);
     subScope.onDestroy((/*ws*/) => {
@@ -3140,42 +3151,83 @@ directiveMap.push(function($n){
 });
 
 
-// #3 *for="" *each=""
+// #5 *for="" *each=""
 directiveMap.push(function($n){
-  return $n.attributes[LIT.$for] && $n.attributes[LIT.$each]
-      && $n.attributes[LIT.$for].value && $n.attributes[LIT.$each].value;
+  return $n.attributes[LIT.$for] && 
+    $n.attributes[LIT.$each] && 
+    $n.attributes[LIT.$for].value && 
+    $n.attributes[LIT.$each].value;
 }, function($n, $m, pipes){
-    const modelAttr = $n.attributes[LIT.$for].value; // list
-    const alias = $n.attributes[LIT.$each].value;
-    const loopWatcher = new LoopWatcher($n, $m, pipes);
-    loopWatcher.mount($n.parentNode);
+  const modelAttr = $n.attributes[LIT.$for].value; // list
+  const alias = $n.attributes[LIT.$each].value;
+  const loopWatcher = new LoopWatcher($n, $m, pipes);
+  loopWatcher.mount($n.parentNode);
 
-    // TODO watch list
-    let modelChangeHandler = $m.on('change:' + modelAttr, function(items, m_o) {
-      console.log('The list changed');
-      console.dir(items);
-      console.dir(loopWatcher);
-      // TODO fix
-      loopWatcher.cleanUp();
-      items.forEach((item) => {
-        loopWatcher.render(item, alias);
-      });
+  // TODO watch list
+  let modelChangeHandler = $m.on('change:' + modelAttr, function(items, m_o) {
+    console.log('The list changed');
+    console.dir(items);
+    console.dir(loopWatcher);
+    // TODO fix
+    loopWatcher.cleanUp();
+    items.forEach((item) => {
+      loopWatcher.render(item, alias);
     });
-    loopWatcher.onDestroy((/*ws*/) => {
-      // cleanup loopWatcher
-      loopWatcher.cleanUp();
-      $m.off('change:' + modelAttr, modelChangeHandler);
+  });
+  loopWatcher.onDestroy((/*ws*/) => {
+    // cleanup loopWatcher
+    loopWatcher.cleanUp();
+    $m.off('change:' + modelAttr, modelChangeHandler);
+  });
+
+  // modelChangeHandler($m.get(modelAttr), $m);
+  let items = $m.get(modelAttr);
+  if (Array.isArray(items)) {
+    items.forEach((item) => {
+      loopWatcher.render(item, alias);
+    });
+  }
+
+  return loopWatcher;
+});
+
+// #6 *attr-enable-<AttributeName>="<model property>"
+directiveMap.push(function($n){
+  let i_n = $n.attributes.length;
+  while (i_n--> 0) if ($n.attributes[i_n].name.includes('*attr-enable-')) return true;
+  return false;
+}, function($n, $m){	
+  const subScope = new AttributeLeaf('*attr-enable', $n);
+  let i_n = $n.attributes.length;
+  let attr;
+  while (i_n --> 0) {
+    attr = $n.attributes[i_n];
+    if (!attr.name.includes('*attr-enable-')) continue;
+    const attrName_s = attr.name.substr(13);
+    const modelAttr = attr.value;
+
+    console.log('::ATTR %s %s', attrName_s, modelAttr);
+
+    // Subscribe to attr.value change
+    const changeHandler = $m.on('change:' + modelAttr, function(value, m_o) {
+      console.log('::[change:%s] %s', modelAttr, value);
+      if (!$n || !$n.parentNode) {
+        console.log('--');
+        return;
+      }
+      $n[value ? 'setAttribute' : 'removeAttribute'](attrName_s, true);
     });
 
-    // modelChangeHandler($m.get(modelAttr), $m);
-    let items = $m.get(modelAttr);
-    if (Array.isArray(items)) {
-      items.forEach((item) => {
-        loopWatcher.render(item, alias);
-      });
+    subScope.affectedProperties.push('change:' + modelAttr, changeHandler);
+
+    // Initial set
+    if ($m.has(modelAttr)){
+      const initValue = $m.get(modelAttr);
+      console.log('::Init settings %s', initValue);
+      $m.trigger('change:' + modelAttr, initValue, $m);
     }
-
-    return loopWatcher;
+  }
+  return subScope;
 });
 
 // @param {HTMLElement} $root
@@ -3241,7 +3293,7 @@ function compile($root, _model, _pipes) {
     return scope;
 };
 
-},"/app/source/spaces":function anonymous(module,require
+},"/src/app/source/spaces":function anonymous(module,require
 ) {
 module.exports = {
   SPACE1: 0x1,
@@ -3251,7 +3303,7 @@ module.exports = {
   HORIZONTAL: 0x10,
 };
 
-},"/app/source/EditView":function anonymous(module,require
+},"/src/app/source/EditView":function anonymous(module,require
 ) {
 const HtmlEdit = require('HtmlEditor');
 const ExtMimeMap = require('ExtMimeMap');
@@ -3626,7 +3678,7 @@ EditView.prototype.events = {
 
 module.exports = EditView;
 
-},"/app/source/MarkdownViewer":function anonymous(module,require
+},"/src/app/source/MarkdownViewer":function anonymous(module,require
 ) {
 const BacksideView = require('../../packages/backside/view');
 
@@ -3706,7 +3758,7 @@ MarkdownViewer.prototype.events = {
 
 module.exports = MarkdownViewer;
 
-},"/app/source/JsConsole":function anonymous(module,require
+},"/src/app/source/JsConsole":function anonymous(module,require
 ) {
 const BacksideView = require('../../packages/backside/view');
 
@@ -3750,17 +3802,17 @@ class JsConsole extends BacksideView {
 		};
 	}
 	
-  refresh() { // send reference on application
-		var 	source = this.model.getSource();
+	refresh() { // send reference on application
+		// var 	source = this.model.getSource();
 
 		this.controls.frame.contentWindow.location.reload();
 		this.controls.header.textContent = this.model.get('title');
 	}
 	
-  updateContent(doc, source) {
+	updateContent(doc, source) {
 		doc.open();
 		doc.write('<html><head>');
-		doc.write('<style>html{font:13px/15px Arial;color:#333;}body{margin:1rem;}p{margin:0 0 8px 0;}.object-container{padding:0 0 0 10px;background:#daf1cb;font-size:12px;line-height:12px;}.object-container p{margin:/*0 0 0 10px*/0;}.message-error{background:#ffddcf;}</style>');
+		doc.write('<style>' + this.CONTENT_STYLES + '</style>');
 		doc.write('<script>' + this.injectCode + '</script>');
 		doc.write('</head><body>');
 
@@ -3777,11 +3829,10 @@ class JsConsole extends BacksideView {
 
 		if (compilationError) {
 			doc.write('<script>console._reportError(`' + compilationError + '`)</script>');
-			
 		} 
 		else {
 			// The try block can catch ReferenceError
-			doc.write('<script>try{(' + func + '())}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.stack)}</script>');
+			doc.write('<script>try{(' + func + '())}catch(e){_console.dir(e);_console.log(e.toString());console._reportError(e.message + "\\n" + e.stack)}</script>');
 		}
 	
 		doc.write('</body></html>');
@@ -3922,9 +3973,9 @@ JsConsole.prototype.injectCode =
 				s += ''; // Converting to string
 			}
 			let $n = document.createElement('p');
+			$n.style.whiteSpace='pre-wrap';
 			$n.innerHTML = escape(s).replace(/\\n/g, '<br/>&#8203;')
 			document.body.appendChild($n);
-
 		},
 		dir: function(o){
 			let $n = document.createElement('div');
@@ -3938,23 +3989,33 @@ JsConsole.prototype.injectCode =
 		_reportError: function(message){
 			let $n = document.createElement('p');
 			$n.className = 'message-error';
-			$n.innerHTML = escape(message).replace(/\\n/g, '<br/>&#8203;');
+			// $n.innerHTML = escape(message).replace(/\\n/g, '<br/>&#8203;');
+			$n.innerHTML = escape(message);
 			document.body.appendChild($n);
 		}
 	};
 	E.onerror = function(e, s, line, position, error){
-		console._reportError(e.stack + ' ' + line + ':' + position);
+		console._reportError(e.message + ' ' + e.stack + ' ' + line + ':' + position);
 		_console.log('Catch error');
 		_console.dir(arguments);
 	};
 	E.addEventListener('unhandledrejection', function(e) {
-		console._reportError(e.reason.stack + '');
+		console._reportError(e.reason.message + ' ' + e.reason.stack + '');
 		_console.log('Promise exception');
 		_console.dir(e);
 		_console.dir(e.reason +'');
 	});
 	
 }(window));`;
+
+JsConsole.prototype.CONTENT_STYLES = 'html{font:13px/15px Arial;color:#333;}\
+body{margin:1rem;color:#4ed04e;background:#262424;}\
+p{margin:0 0 8px 0;white-space:pre-wrap;}\
+.object-container{padding:0 0 0 10px;background:#29540b;color:#cde188;font-size:12px;line-height:12px;}\
+.object-container p{margin:/*0 0 0 10px*/0;white-space:pre-wrap;}\
+.message-error{color:rgb(220,21,212);white-space:pre-wrap;}\
+';
+
 JsConsole.prototype.events = {
   'onclick close': function(){
     this.model.trigger('closePresentation', this.model);
@@ -3973,9 +4034,11 @@ JsConsole.prototype.events = {
   },
 };
 
+
+
 module.exports = JsConsole;
 
-},"/app/source/FrameView":function anonymous(module,require
+},"/src/app/source/FrameView":function anonymous(module,require
 ) {
 const BacksideView = require('../../packages/backside/view');
 
@@ -4122,7 +4185,7 @@ FrameView.prototype.events = {
 
 module.exports = FrameView;
 
-},"/app/source/SHighlighter":function anonymous(module,require
+},"/src/app/source/SHighlighter":function anonymous(module,require
 ) {
 function SHighlighter(conf){
   this.pattern = conf.PATTERN;
@@ -4145,7 +4208,7 @@ SHighlighter.prototype.prettify = function(str){
   
 module.exports =  SHighlighter;
 
-},"/app/source/HighlighterSets":function anonymous(module,require
+},"/src/app/source/HighlighterSets":function anonymous(module,require
 ) {
 function span(className, textContent){
   return '<span class="' + className + '">' + textContent + '</span>';
@@ -4344,7 +4407,7 @@ module.exports = {
   }
 };
 
-},"/app/lib/downloadFile":function anonymous(module,require
+},"/src/app/lib/downloadFile":function anonymous(module,require
 ) {
 function downloadFileFromText(filename, content) {
   var 	a = document.createElement('a'),
@@ -4360,7 +4423,7 @@ function downloadFileFromText(filename, content) {
 }
 module.exports = downloadFileFromText;
 
-},"/app/lib/ctxMenu":function anonymous(module,require
+},"/src/app/lib/ctxMenu":function anonymous(module,require
 ) {
 const Cr = require('cr');
 
@@ -4452,7 +4515,7 @@ module.exports = {
   CtxMenu2
 };
 
-},"/app/source/about.popup":function anonymous(module,require
+},"/src/app/source/about.popup":function anonymous(module,require
 ) {
 const VOC = require('vocabulary');
 const PopupBuilder = require('../lib/PopupBuilder');
@@ -4565,7 +4628,7 @@ module.exports = function(title_s, App){
 		});
 }
 
-},"/app/source/renameDocument.popup":function anonymous(module,require
+},"/src/app/source/renameDocument.popup":function anonymous(module,require
 ) {
 const VOC = require('vocabulary');
 const PopupBuilder = require('../lib/PopupBuilder');
@@ -4618,7 +4681,7 @@ module.exports = function(title_s, doc){
   });
 };
 
-},"/app/source/createDocument.popup":function anonymous(module,require
+},"/src/app/source/createDocument.popup":function anonymous(module,require
 ) {
 const VOC = require('vocabulary');
 const BasePopupView = require('../lib/BasePopupView');
@@ -4734,7 +4797,7 @@ module.exports = function(_model, _view){
   });
 };
 
-},"/app/source/settings.popup":function anonymous(module,require
+},"/src/app/source/settings.popup":function anonymous(module,require
 ) {
 const VOC = require('vocabulary');
 const PopupBuilder = require('../lib/PopupBuilder');
@@ -4904,7 +4967,7 @@ module.exports = function(_self){
   });
 };
 
-},"/app/source/MainView":function anonymous(module,require
+},"/package.json":{"name":"abc-project","version":"0.6.215.20221114","description":"ABC - online code editor","main":"index.js","scripts":{"serve":"python3 -m http.server --directory dist","build:viewcompiler":"node src/packages/bundlepacker/bundler.js -i src/packages/viewcompiler/test/index.js -o src/packages/viewcompiler/test/viewcompiler.bundle.js -r report.json","bundle":"./bin/pack.sh dist","export":"zip -r sec4code.last.zip . -x \"*node_modules/*\" -x *.git/*","test":"node ./node_modules/jest-cli/bin/jest.js"},"author":"N. Maltsev","license":"ISC","devDependencies":{"jest":"latest"},"dependencies":{}},"/src/app/source/MainView":function anonymous(module,require
 ) {
 const DocumentModel = require('DocumentModel');
 const EditView = require('EditView');
@@ -4933,9 +4996,12 @@ const createSettingsPopup = require('settings.popup');
 
 const LOCALSTORAGE_AVAILABLE = Configs.LOCALSTORAGE_AVAILABLE;
 
-// Code editor with syntax highlighting v213 2021/03/02
-// (C) 2015-2021
-const VER = 213;
+
+const package_manifest = require('../../../package.json')
+console.log('package_manifest')
+console.dir(package_manifest)
+
+const VER = package_manifest.version;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      
@@ -5444,7 +5510,7 @@ MainView.prototype.events = {
 
 module.exports = MainView;
 
-},"/app/source/index":function anonymous(module,require
+},"/src/app/source/index":function anonymous(module,require
 ) {
 const MainView = require('./MainView');
 const DocumentModel = require('./DocumentModel');
@@ -5547,4 +5613,4 @@ if (QUERY_OPTIONS.project) {
   App.startNewProject();
 }
 
-}},this,{"/packages/backside/events":"/packages/backside","/packages/backside/model":"/packages/backside","/app/source/DocumentModel":"/app/source","/app/source/instances.axios":"/app/source","/packages/backside/utils":"/packages/backside","/app/source/LimitedStack":"/app/source","/app/source/Configs":"/app/source","/app/source/keycodes":"/app/source","/app/source/HtmlEditor.keybindings":"/app/source","/app/lib/each.utils":"/app/lib","/packages/$4/index":"/packages/$4","/app/source/ProjectModel":"/app/source","/packages/backside/view":"/packages/backside","/app/source/HtmlEditor":"/app/source","/app/source/ExtMimeMap":"/app/source","/app/lib/cr":"/app/lib","/app/source/vocabulary":"/app/source","/app/lib/PopupBuilder":"/app/lib","/app/source/testProject":"/app/source","/app/source/defaultProject":"/app/source","/app/source/reactProject":"/app/source","/app/lib/BasePopupView":"/app/lib","/packages/viewcompiler/viewcompiler":"/packages/viewcompiler","/app/source/spaces":"/app/source","/app/source/EditView":"/app/source","/app/source/MarkdownViewer":"/app/source","/app/source/JsConsole":"/app/source","/app/source/FrameView":"/app/source","/app/source/SHighlighter":"/app/source","/app/source/HighlighterSets":"/app/source","/app/lib/downloadFile":"/app/lib","/app/lib/ctxMenu":"/app/lib","/app/source/about.popup":"/app/source","/app/source/renameDocument.popup":"/app/source","/app/source/createDocument.popup":"/app/source","/app/source/settings.popup":"/app/source","/app/source/MainView":"/app/source","/app/source/index":"/app/source"},""))._executeModule("/app/source/index");
+}},this,{"/src/packages/backside/events":"/src/packages/backside","/src/packages/backside/model":"/src/packages/backside","/src/app/source/DocumentModel":"/src/app/source","/src/app/source/instances.axios":"/src/app/source","/src/packages/backside/utils":"/src/packages/backside","/src/app/source/LimitedStack":"/src/app/source","/src/app/source/Configs":"/src/app/source","/src/app/source/keycodes":"/src/app/source","/src/app/source/HtmlEditor.keybindings":"/src/app/source","/src/app/lib/each.utils":"/src/app/lib","/src/packages/$4/index":"/src/packages/$4","/src/app/source/ProjectModel":"/src/app/source","/src/packages/backside/view":"/src/packages/backside","/src/app/source/HtmlEditor":"/src/app/source","/src/app/source/ExtMimeMap":"/src/app/source","/src/app/lib/cr":"/src/app/lib","/src/app/source/vocabulary":"/src/app/source","/src/app/lib/PopupBuilder":"/src/app/lib","/src/app/source/testProject":"/src/app/source","/src/app/source/defaultProject":"/src/app/source","/src/app/source/reactProject":"/src/app/source","/src/app/lib/BasePopupView":"/src/app/lib","/src/packages/viewcompiler/viewcompiler":"/src/packages/viewcompiler","/src/app/source/spaces":"/src/app/source","/src/app/source/EditView":"/src/app/source","/src/app/source/MarkdownViewer":"/src/app/source","/src/app/source/JsConsole":"/src/app/source","/src/app/source/FrameView":"/src/app/source","/src/app/source/SHighlighter":"/src/app/source","/src/app/source/HighlighterSets":"/src/app/source","/src/app/lib/downloadFile":"/src/app/lib","/src/app/lib/ctxMenu":"/src/app/lib","/src/app/source/about.popup":"/src/app/source","/src/app/source/renameDocument.popup":"/src/app/source","/src/app/source/createDocument.popup":"/src/app/source","/src/app/source/settings.popup":"/src/app/source","/package.json":"","/src/app/source/MainView":"/src/app/source","/src/app/source/index":"/src/app/source"},""))._executeModule("/src/app/source/index");/*Compiled 2022-11-14:22:50:58*/
