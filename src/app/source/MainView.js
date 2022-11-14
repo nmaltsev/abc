@@ -31,11 +31,11 @@ const package_manifest = require('../../../package.json')
 console.warn('[DEBUG] package_manifest')
 console.dir(package_manifest)
 
-// Code editor with syntax highlighting v214 2022/11/10
+// Code editor with syntax highlighting v215 2022/11/14
 // (C) 2015-2021
 //  TODO get from package.json
 
-const VER = 214;
+const VER = 215;
 
 const {
   SPACE1, SPACE2, SPACE3, SPACE4, HORIZONTAL,      

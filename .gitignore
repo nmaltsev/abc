@@ -60,7 +60,7 @@ typings/
 .DS_Store
 
 dist/*
-static/app/build/*.bundle.*
+src/app/assets/*.bundle.*
 *.zip
 report.json
 *.bundle.js

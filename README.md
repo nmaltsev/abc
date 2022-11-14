@@ -17,11 +17,7 @@ The current version of the application has partial support for the markdown file
 ### Commands
 To build the project, you must run the following command:
 ``` 
-$ npm run build
-$ npm run build:styles
-```
-The `static/app/build` folder will contain the executable application. 
-
-
 npm run bundle
 npm run serve
+```
+The `dist` folder will contain the executable application.
