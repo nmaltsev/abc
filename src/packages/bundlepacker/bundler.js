@@ -1,14 +1,17 @@
 /**
- * JS bundler 18
+ * JS bundler 19 2022/11/14
  * TODO Use static analyzer to build the BundlerCode
  * TODO Do not add any extensions if they are already defined ( require('./../../package.json'))
+ * TODO import json files
  */
 const $path = require('path');
 
 const DependencyScaner = require('./src/scaner');
 const bundleGenerator = require('./src/bundle.generator');
 const {groupArguments, head, writeText} = require('./src/utils');
-const __version__ = '1';
+// TODO add metadata to the bundle
+// TODO parametrise the bundle metadata
+const __version__ = '1, bundled by kitty cat & cat brothers';
 
 
 /**

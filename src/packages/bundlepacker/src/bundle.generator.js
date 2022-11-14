@@ -31,18 +31,33 @@ function generateBundleCodeFromFileList(bundleFiles, localPackagePath_s){
     })
   ).then(function(sources){
     let modules_s = sources.map(function(source_s, pos_n){
+      // The purpose of this function is to serialize the module 
       if (!source_s) {
         console.log('SKIP module');
         console.dir([bundleFiles[pos_n]]);
         return;
       }
       let resourcePath = bundleFiles[pos_n];
-      let modId = escapePath(resourcePath).replace(/\\/g, '/').replace(basePath, '').replace('.js', '');
+      let modId = escapePath(resourcePath).replace(/\\/g, '/').replace(basePath, '').replace(/\.js$/i, '');
       let dirPath = $path.dirname(resourcePath).replace(/\\/g, '/').replace(basePath, '');
-      //~ console.log('R [%s] modId [%s]', resourcePath, modId);
+      // console.log('R [%s] modId [%s]', resourcePath, modId);
       directoryMap[modId] = dirPath;
       lastModule = modId;
       let func_s = 'function(){}';
+
+      if (modId.endsWith('.json')) {
+        // "id":<serialized JSON object>
+        // console.log('JSON %s (%s)', source_s, typeof(source_s));
+        try {
+          return JSON.stringify(modId) + ':' + JSON.stringify(JSON.parse(source_s));
+        } catch (error) {
+          moduleErrors.push({
+            resource: resourcePath,
+            error: error.toString()
+          });
+        }
+      }
+      
       try {
         // Attention: Don't use the .replace() method on source_s variable. Use only the strictReplace() function!
         // TODO add code minification
@@ -54,12 +69,14 @@ function generateBundleCodeFromFileList(bundleFiles, localPackagePath_s){
           error: error.toString()
         });
       }
+      // "id":<function source code> 
+      // TODO add a commnet why I use JSON.stringify() for serialization identifiers
       return JSON.stringify(modId) + ':' + func_s;
     })
       .filter(s => !!s)
       .join(',');
     
-    //~ console.log('lastModule %s', lastModule);
+    // console.log('lastModule %s', lastModule);
     
     // String.prototype.replace() handles `$` symbols in the code that can cause runtime errors!
     let bundleCode = strictReplace(
@@ -72,6 +89,7 @@ function generateBundleCodeFromFileList(bundleFiles, localPackagePath_s){
               .replace(/\/\*[\w\W]*?\*\//g, '')
           ),
           '%LASTMOD%', 
+            // TODO explain why JSON.stringify is used to serialise the path
           JSON.stringify(lastModule)
         ),
         '%ARGS%',

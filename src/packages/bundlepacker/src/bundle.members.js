@@ -1,6 +1,10 @@
 const BUNDLE_CLASS = class{
   constructor(modules, environment, dir, localRepo){
+    // This object stores all original definitions:
+    // fabrics for js modules
+    // JSON objects for json modules
     this._modules = modules;
+    // stores cached version of js modules
     this._stack = {};
     this._global = environment;
     this._dir = dir;
@@ -14,6 +18,11 @@ const BUNDLE_CLASS = class{
   
   _executeModule(modulePath){
     const modId = this.constructor._path2id(modulePath);
+
+    if (modId.endsWith('.json')) {
+      // If Id looks like a json object, return the corresponding json object 
+      return this._modules[modId];
+    }
     
     if (this._stack.hasOwnProperty(modId)) this._stack[modId]();
     if (!this._modules.hasOwnProperty(modId)) {

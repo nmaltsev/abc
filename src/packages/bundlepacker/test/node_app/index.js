@@ -1,5 +1,7 @@
 const readText = require('./app');
-console.log('Start');
+const manifest = require('./manifest.json');
+console.log('Start2');
+console.dir(manifest)
 readText('./text.txt').then(content => {
     console.log(content);
 });

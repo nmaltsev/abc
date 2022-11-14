@@ -1,6 +1,6 @@
 {
   "name": "abc-project",
-  "version": "0.6.215",
+  "version": "0.6.215.20221114",
   "description": "ABC - online code editor",
   "main": "index.js",
   "scripts": {
@@ -12,5 +12,8 @@
   },
   "author": "N. Maltsev",
   "license": "ISC",
+  "devDependencies": {
+    "jest": "latest"
+  },
   "dependencies": {}
 }

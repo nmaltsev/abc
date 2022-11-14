@@ -7,6 +7,8 @@ const {
 } = require('./utils');
 const { BUNDLE_CLASS } = require('./bundle.members');
 
+const NODE_JS_PACKAGES = ['fs']
+
 class Resource {
   
   /**
@@ -31,11 +33,23 @@ class Resource {
     return readText(this.path)
       .then((source_s) => {
         const depenedencies = catchDependencies(source_s);
+        // console.log('localPackagePath_s %s, this.path %s', localPackagePath_s, this.path)
+        // console.dir(depenedencies)
         
         return depenedencies.require.map((relativePath_s) => {
+            // console.log('R %s', relativePath_s);
+            let extension_s = '.js';
+            if (relativePath_s.endsWith('.json')) {
+              extension_s = ''
+            }
+
+            if (NODE_JS_PACKAGES.indexOf(relativePath_s) > -1) {
+              // TODO skip default node.js modules
+            }
+
             return new Resource(
               // TODO remove js extension
-              BUNDLE_CLASS._mergePaths(dirPath, relativePath_s, localPackagePath_s) + '.js',
+              BUNDLE_CLASS._mergePaths(dirPath, relativePath_s, localPackagePath_s) + extension_s,
               this,
               relativePath_s
             );
