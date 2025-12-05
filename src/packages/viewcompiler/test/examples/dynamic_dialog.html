@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <title>Demo app: Dynamic Modal Dialog</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="reset.css"/>
+  </head>
+  <body>
+    <button *on-click="onOpenDialogBtnClick" *ref="btn">Open Dialog</button>
+    <template *if="showDialog" *equal="true">
+        <dialog 
+            *ref="dialog" 
+            *on-close="onDialogClose" 
+            *on-cancel="onDialogCancel"
+        >
+            <form *on-submit="">
+                <input type="text" name="fname"/>
+                <button type="submit">Export</button>
+            </form>
+            <button *on-click="onCloseBtnClick_dialog">Close</button>
+        </dialog>
+    </template>
+    
+    <script src="../viewcompiler.bundle.js"></script>
+    <script>
+const model = new Backside.Model({
+    showDialog: false,
+});
+
+const _unbind = model.listen({
+    onOpenDialogBtnClick: function(e, m_o){
+        m_o.change('showDialog', true);
+    },
+    'init-ref:dialog': function($node) {
+        console.log('[init-ref:dialog]', $node)
+        $node.showModal();
+    },
+    'destroy-ref:dialog': function($node) {
+        console.log('[destroy-ref:dialog]', $node)
+    },
+    'init-ref:btn': function($node) {
+        console.log('[init-ref:btn]', $node)
+    },
+    'destroy-ref:btn': function($node) {
+        console.log('[destroy-ref:btn]', $node)
+    },
+    onCloseBtnClick_dialog: function(e, state_o){
+        const $dialog = e.target.closest('dialog');
+        $dialog?.close();
+    },
+    onDialogClose: function(e, m_o) {
+        console.log('onClose');
+        m_o.change('showDialog', false);
+    },
+    onDialogCancel: function(e) {
+        console.log('onCancel');
+    },
+});
+
+const cleaningTree = viewcompiler(document.body, model);
+
+    </script>
+  </body>
+</html>

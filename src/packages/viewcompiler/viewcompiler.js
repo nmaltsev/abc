@@ -3,6 +3,7 @@
 //==================================
 const $4 = require('../$4/index');
 const Model = require('../backside/model');
+const VERSION = '19.2025.12.05';
 module.exports = compile;
 
 // TODO use another literals
@@ -130,7 +131,6 @@ class EventLeaf {
   }
 }
 
-
 /**
 * @param {string} pattern_s
 * @param {Model} model
@@ -139,12 +139,11 @@ class EventLeaf {
 */
 function pipeExecute(pattern_s, model, pipesMap){
     if (!pattern_s.includes('|') || !pipesMap) {
-      return model.get(pattern_s) || '';
+      return (model.get(pattern_s)??'') + '';
     }
 
     const pipes = pattern_s.replace(/\s+/g, '').split('|');
-    let value  = model.get(pipes.shift()) || '';
-    let i = 0;
+    let value  = model.get(pipes.shift()), i = 0;
 
     while (i < pipes.length) {
       if (pipesMap.hasOwnProperty(pipes[i])) {
@@ -506,8 +505,10 @@ directiveMap.push(function($n){
     let subScope = new CleaningNode('*alias');
     let alias_s = $n.attributes[LIT.$alias].value;
 
+    console.log('before init-ref:%s', alias_s)
     $m.trigger('init-ref:' + alias_s, $n, $m);
     subScope.onDestroy((/*ws*/) => {
+      console.log('before destroy-ref:%s', alias_s)
       $m.trigger('destroy-ref:' + alias_s, $n, $m);
     });
 
@@ -594,6 +595,99 @@ directiveMap.push(function($n){
   return subScope;
 });
 
+
+/**
+ * 
+ * @param {String} templateId
+ * @returns {null|HTMLDocumentFragment}
+ */
+function getFragment(templateId) {
+  let templateSelector = templateId[0] == '\'' ? templateId.substring(1, templateId.length - 1) : m_o.get(templateId);
+  
+  const $templateNode = document.querySelector(templateSelector);
+
+  // TODO good to raise an exception
+  if (
+    !$templateNode ||
+    !('content' in $templateNode)
+  ) return null;
+  
+  // return $templateNode;
+  return $templateNode.content.cloneNode(true);
+}
+
+
+function replaceContent($parent, $fragment) {
+  $4.emptyNode($parent);
+  $parent.appendChild($fragment);
+}
+
+
+/*
+ASPECTS:
+1. I must use a model-in-model practic: Model will store instalss of the Model class
+- Thus the app will be able to propagete model changes from template back into base app
+2. I should check if property is an instace of Model class else wrap in Model class
+  compile(obj isinstanceof Model ? obj : new Model(obj))
+3. I have to listen model destroy event and update template subview
+4. I can consider "namespaces" in mOdel:
+  model = new Model({})
+  model.get('abc.namespace.z', 'abc')
+or
+  model_ref = select(model, 'abc.namespace.z')
+  model_ref.get('abc');
+I don't know how that can help yet
+
+*/
+
+// <div *content-model="fileTree" *content-template="'#temp1'"></div> 
+
+directiveMap.push(function($n){
+  return $n.attributes['*content-model'] && 
+    $n.attributes['*content-template'];
+}, function($n, $m, _pipes){
+  const modelPropertyName_s = $n.attributes['*content-model'].value;
+  const templateId = $n.attributes['*content-template'].value;
+  const subScope = new CleaningNode('*content-template');
+  
+  const modelChangeHandler = $m.on('change:' + modelPropertyName_s, function(value, m_o) {
+    console.warn(
+      '[Change %s] childModel %s', 
+      modelPropertyName_s,
+      JSON.stringify(value)
+    );
+
+    if (!subScope.$target) {
+      // Destroy existed View
+      subScope.destroy(false);
+      $4.emptyNode($n);
+    }
+    //----------------------
+    if (value instanceof Object) {
+      const $fragment = getFragment(templateId);
+      replaceContent($n, $fragment);
+      subScope.$target = $n;
+      console.log('\tTarget %s', subScope.$target.outerHTML);
+
+
+      // 
+      // TODO destroy model `new Model(value)` on destroy 
+      // Skipped dependency
+      // 
+
+      subScope.subjects.push(compile(subScope.$target, new Model(value), _pipes));
+    }
+  });
+  // Initialize execution
+  $m.trigger('change:' + modelPropertyName_s, $m.get(modelPropertyName_s), $m); 
+  // Creation of destructor
+  subScope.onDestroy((_) => {
+    $m.off('change:' + modelPropertyName_s, modelChangeHandler);
+  });
+
+  return subScope;
+});
+
 // @param {HTMLElement} $root
 // @param {Model} _model
 // @param {Object} _pipes: {[String]: (Any) => Any }
@@ -637,6 +731,12 @@ function compile($root, _model, _pipes) {
     let $attr;
 
     while (($node = directiveIterator.nextNode())) {
+      // TODO check impact of this construction (needed for *content-template directive!):
+      // This iterator skipps root elements, only loops within child elements
+      // if ($node === $root) {
+      //   console.log('Skip', $node, $root) 
+      //   continue;
+      // }
       // Attribute interpolation must be done before directories
       for ($attr of $node.attributes) {
         if ($attr.value.includes('[[')) { // one time interpolation
@@ -656,3 +756,4 @@ function compile($root, _model, _pipes) {
 
     return scope;
 };
+compile.VERSION = VERSION;
