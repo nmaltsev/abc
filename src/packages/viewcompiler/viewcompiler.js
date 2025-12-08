@@ -62,9 +62,10 @@ class AttributeLeaf extends CleaningLeaf {
      * @param {Model} $model
      * @param {(string) => string} pipeCb
      */
-    constructor ($attr, $model, pipeCb) {
+    constructor ($attr, $node, $model, pipeCb) {
       super();
       this.$target = $attr;
+      this.$node = $node;
       this.$model = $model;
       this.pipeCb = pipeCb;
       // The list of attribute value's parts 
@@ -90,6 +91,8 @@ class AttributeLeaf extends CleaningLeaf {
         return item();
       }).join('');
       this.$target.value = newAttrValue_s;
+      // To force override the user defined content
+      if (this.$target.name === 'value') this.$node.value = newAttrValue_s;
       return this;
     }
 
@@ -151,7 +154,7 @@ function pipeExecute(pattern_s, model, pipesMap){
       }
       i++;
     }
-    return (value).toString();
+    return value + '';
 }
 
 /**
@@ -245,8 +248,8 @@ function stringInterpolation($node, model, scope, pipes) {
 * @param {Object} pipes
 * @return {AttributeLeaf}
 */
-function attributeInterpolation($attr, $model, pipes){
-    const watcher = new AttributeLeaf($attr, $model, function(pattern_s){
+function attributeInterpolation($attr, $node, $model, pipes){
+    const watcher = new AttributeLeaf($attr, $node, $model, function(pattern_s){
       return pipeExecute(pattern_s, $model, pipes); 
     });
 
@@ -744,7 +747,8 @@ function compile($root, _model, _pipes) {
         }
 
         if ($attr.value.includes('{{')) {
-          scope.subjects.push(attributeInterpolation($attr, _model, _pipes));
+          // Althougt $attr.value and $node.value mutate the attribute value. only $node.value can ovveriide the user defined content at the input form
+          scope.subjects.push(attributeInterpolation($attr, $node, _model, _pipes));
         }
       }
       // Iterate through the directive list
